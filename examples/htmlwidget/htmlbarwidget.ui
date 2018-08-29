@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>HtmlBarWidget</class>
+ <widget class="QWidget" name="HtmlBarWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>38</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <property name="spacing">
+    <number>5</number>
+   </property>
+   <property name="leftMargin">
+    <number>5</number>
+   </property>
+   <property name="topMargin">
+    <number>5</number>
+   </property>
+   <property name="rightMargin">
+    <number>5</number>
+   </property>
+   <property name="bottomMargin">
+    <number>5</number>
+   </property>
+   <item>
+    <widget class="QToolButton" name="toolButtonPrev">
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset resource="htmlwidget.qrc">
+       <normaloff>:/resources/images/goleft-128.png</normaloff>:/resources/images/goleft-128.png</iconset>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>24</width>
+       <height>24</height>
+      </size>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QToolButton" name="toolButtonNext">
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset resource="htmlwidget.qrc">
+       <normaloff>:/resources/images/goright-128.png</normaloff>:/resources/images/goright-128.png</iconset>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>24</width>
+       <height>24</height>
+      </size>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QComboBox" name="comboBox">
+     <property name="editable">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QToolButton" name="toolButtonOpen">
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset resource="htmlwidget.qrc">
+       <normaloff>:/resources/images/open-128.png</normaloff>:/resources/images/open-128.png</iconset>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>24</width>
+       <height>24</height>
+      </size>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="htmlwidget.qrc"/>
+ </resources>
+ <connections/>
+</ui>

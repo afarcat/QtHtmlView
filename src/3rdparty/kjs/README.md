@@ -1,0 +1,10 @@
+# KJS
+
+Javascript engine
+
+## Introduction
+
+This library provides an ECMAScript compatible interpreter. The ECMA standard
+is based on well known scripting languages such as Netscape's JavaScript and
+Microsoft's JScript.
+

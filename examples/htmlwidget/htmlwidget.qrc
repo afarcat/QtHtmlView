@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>resources/images/goleft-128.png</file>
+        <file>resources/images/goright-128.png</file>
+        <file>resources/images/open-128.png</file>
+    </qresource>
+</RCC>

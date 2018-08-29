@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>src/css/html4.css</file>
+        <file>src/css/presentational.css</file>
+        <file>src/css/quirks.css</file>
+        <file>resources/images/image-missing.png</file>
+    </qresource>
+</RCC>
