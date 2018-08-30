@@ -26,7 +26,9 @@
 #include "part.h"
 
 #include <QCoreApplication>
+#ifdef QT_WIDGETS_LIB
 #include <QScrollBar>
+#endif
 #include <QKeyEvent>
 
 #include <QDebug>
@@ -199,11 +201,12 @@ bool PartManager::eventFilter(QObject *obj, QEvent *ev)
     }
 
     QWidget *w = static_cast<QWidget *>(obj);
-
+#ifdef QT_WIDGETS_LIB
     if (((w->windowFlags().testFlag(Qt::Dialog)) && w->isModal()) ||
             (w->windowFlags().testFlag(Qt::Popup)) || (w->windowFlags().testFlag(Qt::Tool))) {
         return false;
     }
+#endif
 
     QMouseEvent *mev = nullptr;
     if (ev->type() == QEvent::MouseButtonPress || ev->type() == QEvent::MouseButtonDblClick) {
@@ -219,7 +222,7 @@ bool PartManager::eventFilter(QObject *obj, QEvent *ev)
     Part *part;
     while (w) {
         QPoint pos;
-
+#ifdef QT_WIDGETS_LIB
         if (!d->m_managedTopLevelWidgets.contains(w->topLevelWidget())) {
             return false;
         }
@@ -227,7 +230,7 @@ bool PartManager::eventFilter(QObject *obj, QEvent *ev)
         if (d->m_bIgnoreScrollBars && ::qobject_cast<QScrollBar *>(w)) {
             return false;
         }
-
+#endif
         if (mev) { // mouse press or mouse double-click event
             pos = mev->globalPos();
             part = findPartFromWidget(w, pos);
@@ -294,7 +297,7 @@ bool PartManager::eventFilter(QObject *obj, QEvent *ev)
 
             return false;
         }
-
+#ifdef QT_WIDGETS_LIB
         w = w->parentWidget();
 
         if (w && (((w->windowFlags() & Qt::Dialog) && w->isModal()) ||
@@ -304,7 +307,9 @@ bool PartManager::eventFilter(QObject *obj, QEvent *ev)
 #endif
             return false;
         }
-
+#else
+        w = w->parentItem();
+#endif
     }
 
 #ifdef DEBUG_PARTMANAGER
@@ -354,6 +359,7 @@ void PartManager::addPart(Part *part, bool setActive)
         setActivePart(part);
 
         if (QWidget *w = part->widget()) {
+#ifdef QT_WIDGETS_LIB
             // Prevent focus problems
             if (w->focusPolicy() == Qt::NoFocus) {
                 qWarning() << "Part '" << part->objectName() << "' has a widget "
@@ -367,6 +373,7 @@ void PartManager::addPart(Part *part, bool setActive)
             }
             w->setFocus();
             w->show();
+#endif
         }
     }
     emit partAdded(part);
@@ -561,9 +568,11 @@ const QList<Part *> PartManager::parts() const
 
 void PartManager::addManagedTopLevelWidget(const QWidget *topLevel)
 {
+#ifdef QT_WIDGETS_LIB
     if (!topLevel->isTopLevel()) {
         return;
     }
+#endif
 
     if (d->m_managedTopLevelWidgets.contains(topLevel)) {
         return;

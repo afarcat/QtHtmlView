@@ -95,42 +95,44 @@ DOMString HTMLDocumentImpl::lastModified() const
 
 DOMString HTMLDocumentImpl::cookie() const
 {
-    WId windowId = 0;
-    KHTMLView *v = view();
+    //AFA
+    //WId windowId = 0;
+    //KHTMLView *v = view();
 
-    if (v && v->topLevelWidget()) {
-        windowId = v->topLevelWidget()->winId();
-    }
+    //if (v && v->topLevelWidget()) {
+    //    windowId = v->topLevelWidget()->winId();
+    //}
 
-    //AFA org::kde::KCookieServer kcookiejar("org.kde.kded5", "/modules/kcookiejar", QDBusConnection::sessionBus());
-    //AFA QDBusReply<QString> reply = kcookiejar.findDOMCookies(URL().url(), qlonglong(windowId));
+    //org::kde::KCookieServer kcookiejar("org.kde.kded5", "/modules/kcookiejar", QDBusConnection::sessionBus());
+    //QDBusReply<QString> reply = kcookiejar.findDOMCookies(URL().url(), qlonglong(windowId));
 
-    //AFA if (!reply.isValid()) {
-    //AFA     qCWarning(KHTML_LOG) << "Can't communicate with cookiejar!";
-    //AFA     return DOMString();
-    //AFA }
+    //if (!reply.isValid()) {
+    //    qCWarning(KHTML_LOG) << "Can't communicate with cookiejar!";
+    //    return DOMString();
+    //}
 
-    //AFA return DOMString(reply.value());
+    //return DOMString(reply.value());
     return DOMString();
 }
 
 void HTMLDocumentImpl::setCookie(const DOMString &value)
 {
-    WId windowId = 0;
-    KHTMLView *v = view();
+    //AFA
+    //WId windowId = 0;
+    //KHTMLView *v = view();
 
-    if (v && v->topLevelWidget()) {
-        windowId = v->topLevelWidget()->winId();
-    }
+    //if (v && v->topLevelWidget()) {
+    //    windowId = v->topLevelWidget()->winId();
+    //}
 
-    QByteArray fake_header("Set-Cookie: ");
-    fake_header.append(value.string().toLatin1().constData());
-    fake_header.append("\n");
-    // Note that kded modules are autoloaded so we don't need to call loadModule ourselves.
-    //AFA org::kde::KCookieServer kcookiejar("org.kde.kded5", "/modules/kcookiejar", QDBusConnection::sessionBus());
-    // Can't use kcookiejar.addCookies because then we can't pass NoBlock...
-    //AFA kcookiejar.call(QDBus::NoBlock, "addCookies",
-    //AFA                 URL().url(), fake_header, qlonglong(windowId));
+    //QByteArray fake_header("Set-Cookie: ");
+    //fake_header.append(value.string().toLatin1().constData());
+    //fake_header.append("\n");
+    //// Note that kded modules are autoloaded so we don't need to call loadModule ourselves.
+    //org::kde::KCookieServer kcookiejar("org.kde.kded5", "/modules/kcookiejar", QDBusConnection::sessionBus());
+    //// Can't use kcookiejar.addCookies because then we can't pass NoBlock...
+    //kcookiejar.call(QDBus::NoBlock, "addCookies",
+    //                URL().url(), fake_header, qlonglong(windowId));
 }
 
 void HTMLDocumentImpl::setBody(HTMLElementImpl *_body, int &exceptioncode)

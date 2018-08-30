@@ -411,7 +411,11 @@ void RenderBox::paintRootBoxDecorations(PaintInfo &paintInfo, int _tx, int _ty)
     }
 
     if (!bgColor.isValid() && canvas()->view()) {
+#ifdef QT_WIDGETS_LIB
         bgColor = canvas()->view()->palette().color(QPalette::Active, QPalette::Base);
+#else
+        bgColor = qApp->palette().color(QPalette::Active, QPalette::Base);
+#endif
     }
 
     int w = width();
@@ -2629,7 +2633,7 @@ bool RenderBox::handleEvent(const DOM::EventImpl &e)
             accepted = false;
             break;
         }
-
+#ifdef QT_WIDGETS_LIB
         bool d = (we.delta() < 0);
         if (orient == Qt::Vertical) {
             if (QScrollBar *vsb = layer()->verticalScrollbar()) {
@@ -2646,6 +2650,7 @@ bool RenderBox::handleEvent(const DOM::EventImpl &e)
                 accepted = true;
             }
         }
+#endif
         break;
     }
     case EventImpl::KEYDOWN_EVENT:
@@ -2660,6 +2665,7 @@ bool RenderBox::handleEvent(const DOM::EventImpl &e)
         QKeyEvent *const ke = domKeyEv.qKeyEvent();
         QScrollBar *vbar = layer()->verticalScrollbar();
         QScrollBar *hbar = layer()->horizontalScrollbar();
+#ifdef QT_WIDGETS_LIB
         switch (ke->key()) {
         case Qt::Key_PageUp:
             if (vbar) {
@@ -2694,6 +2700,7 @@ bool RenderBox::handleEvent(const DOM::EventImpl &e)
         default:
             break;
         }
+#endif
         break;
     }
     default:

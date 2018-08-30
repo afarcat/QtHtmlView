@@ -29,7 +29,14 @@
 #include <khtml_export.h>
 
 // qt includes and classes
+#ifdef QT_WIDGETS_LIB
 #include <QScrollArea>
+#else
+#include <QQuickPaintedItem>
+#define QWidget QQuickItem
+#define QScrollArea QQuickPaintedItem
+#define QAbstractScrollArea QQuickItem
+#endif
 
 class QPainter;
 class QRect;
@@ -365,11 +372,15 @@ protected:
     void clear();
 
     bool event(QEvent *event) override;
-    void paintEvent(QPaintEvent *) override;
-    void resizeEvent(QResizeEvent *event) override;
-    void showEvent(QShowEvent *) override;
-    void hideEvent(QHideEvent *) override;
-    bool focusNextPrevChild(bool next) override;
+#ifdef QT_WIDGETS_LIB
+    void paintEvent(QPaintEvent *) /*AFA override*/;
+#else
+    void paint(QPainter *painter) override;
+#endif
+    void resizeEvent(QResizeEvent *event) /*AFA override*/;
+    void showEvent(QShowEvent *) /*AFA override*/;
+    void hideEvent(QHideEvent *) /*AFA override*/;
+    bool focusNextPrevChild(bool next) /*AFA override*/;
     void mousePressEvent(QMouseEvent *) override;
     void focusInEvent(QFocusEvent *) override;
     void focusOutEvent(QFocusEvent *) override;
@@ -381,11 +392,11 @@ protected:
 #endif
     void dragEnterEvent(QDragEnterEvent *) override;
     void dropEvent(QDropEvent *) override;
-    void closeEvent(QCloseEvent *) override;
+    void closeEvent(QCloseEvent *) /*AFA override*/;
     virtual bool widgetEvent(QEvent *);
-    bool viewportEvent(QEvent *e) override;
+    bool viewportEvent(QEvent *e) /*AFA override*/;
     bool eventFilter(QObject *, QEvent *) override;
-    void scrollContentsBy(int dx, int dy) override;
+    void scrollContentsBy(int dx, int dy) /*AFA override*/;
 
     void keyPressEvent(QKeyEvent *_ke) override;
     void keyReleaseEvent(QKeyEvent *_ke) override;

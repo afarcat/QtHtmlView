@@ -25,8 +25,10 @@
 
 #include "rendering/render_block.h"
 #include <QtCore/QObject>
+#ifdef QT_WIDGETS_LIB
 #include <QAbstractScrollArea>
 #include <QScrollBar>
+#endif
 #include <QPointer>
 
 class KHTMLView;
@@ -140,7 +142,11 @@ public:
     bool isRedirectedWidget() const;
     bool isDisabled() const
     {
+#ifdef QT_WIDGETS_LIB
         return m_widget && !m_widget->isEnabled();
+#else
+        return m_widget && !m_widget->property("enabled").toBool();
+#endif
     }
 
 #ifdef ENABLE_DUMP
@@ -200,7 +206,22 @@ protected:
     QPointer<QWidget> m_underMouse;
     QPixmap *m_buffer[2];
 
+#ifdef QT_WIDGETS_LIB
     QFrame::Shape m_nativeFrameShape;
+#else
+    struct QFrame {
+        enum Shape {
+            NoFrame  = 0, // no frame
+            Box = 0x0001, // rectangular box
+            Panel = 0x0002, // rectangular panel
+            WinPanel = 0x0003, // rectangular panel (Windows)
+            HLine = 0x0004, // horizontal line
+            VLine = 0x0005, // vertical line
+            StyledPanel = 0x0006 // rectangular panel depending on the GUI style
+        };
+    };
+    QFrame::Shape m_nativeFrameShape;
+#endif
 
     //Because we mess with normal detach due to ref/deref,
     //we need to keep track of the arena ourselves

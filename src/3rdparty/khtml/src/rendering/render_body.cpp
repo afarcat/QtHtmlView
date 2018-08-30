@@ -27,7 +27,9 @@
 
 #include "khtml_debug.h"
 
+#ifdef QT_WIDGETS_LIB
 #include <QScrollBar>
+#endif
 
 using namespace khtml;
 using namespace DOM;
@@ -95,8 +97,12 @@ void RenderBody::layout()
     if (!scrollbarsStyled) {
         RenderCanvas *canvas = this->canvas();
         if (canvas->view()) {
+#ifdef QT_WIDGETS_LIB
             canvas->view()->horizontalScrollBar()->setPalette(style()->palette());
             canvas->view()->verticalScrollBar()->setPalette(style()->palette());
+#else
+            //AFA-FIXME
+#endif
         }
         scrollbarsStyled = true;
     }

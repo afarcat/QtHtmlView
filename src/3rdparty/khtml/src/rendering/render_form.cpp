@@ -50,19 +50,25 @@
 //AFA #include <sonnet/backgroundchecker.h>
 //AFA #include <sonnet/dialog.h>
 
+#ifdef QT_WIDGETS_LIB
 #include <QApplication>
 #include <QAbstractItemView>
-#include <QAbstractTextDocumentLayout>
 #include <QDialog>
 #include <QDialogButtonBox>
-#include <QDir>
 #include <QStyle>
 #include <QStyleOptionButton>
 #include <QLabel>
 #include <QStyleOptionFrameV3>
-#include <QStandardItemModel>
 #include <QListWidget>
 #include <QProxyStyle>
+#include <QMenu>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+#endif
+
+#include <QAbstractTextDocumentLayout>
+#include <QDir>
+#include <QStandardItemModel>
 
 #include <misc/helper.h>
 #include <xml/dom2_eventsimpl.h>
@@ -75,16 +81,13 @@
 #include <khtml_ext.h>
 #include <xml/dom_docimpl.h>
 
-#include <QMenu>
 #include <QBitmap>
-#include <QHBoxLayout>
-#include <QVBoxLayout>
 
 using namespace khtml;
 using namespace DOM;
 
 // ----------------- proxy style used to apply some CSS properties to native Qt widgets -----------------
-
+#ifdef QT_WIDGETS_LIB
 struct KHTMLProxyStyle : public QProxyStyle {
     KHTMLProxyStyle(QStyle *parent)
         : QProxyStyle(parent)
@@ -218,13 +221,16 @@ struct KHTMLProxyStyle : public QProxyStyle {
     int clearButtonOverlay;
     bool noBorder;
 };
+#endif
 
 // ---------------------------------------------------------------------
 
 RenderFormElement::RenderFormElement(HTMLGenericFormElementImpl *element)
     : RenderWidget(element)
 //     , m_state(0)
+#ifdef QT_WIDGETS_LIB
     , m_proxyStyle(nullptr)
+#endif
     , m_exposeInternalPadding(false)
     , m_isOxygenStyle(false)
 {
@@ -245,7 +251,9 @@ void RenderFormElement::setStyle(RenderStyle *_style)
         if (style()->backgroundLayers()->backgroundClip() == BGBORDER) {
             style()->accessBackgroundLayers()->setBackgroundClip(BGPADDING);
         }
+#ifdef QT_WIDGETS_LIB
         m_isOxygenStyle = QApplication::style()->objectName().contains("oxygen");
+#endif
     }
 }
 
@@ -276,14 +284,16 @@ void RenderFormElement::setPadding()
     if (!includesPadding()) {
         return;
     }
-
+#ifdef QT_WIDGETS_LIB
     KHTMLProxyStyle *style = static_cast<KHTMLProxyStyle *>(getProxyStyle());
     style->left = RenderWidget::paddingLeft();
     style->right = RenderWidget::paddingRight();
     style->top = RenderWidget::paddingTop();
     style->bottom = RenderWidget::paddingBottom();
+#endif
 }
 
+#ifdef QT_WIDGETS_LIB
 QProxyStyle *RenderFormElement::getProxyStyle()
 {
     assert(widget());
@@ -294,6 +304,7 @@ QProxyStyle *RenderFormElement::getProxyStyle()
     widget()->setStyle(m_proxyStyle);
     return m_proxyStyle;
 }
+#endif
 
 short RenderFormElement::baselinePosition(bool f) const
 {
@@ -304,7 +315,9 @@ void RenderFormElement::setQWidget(QWidget *w)
 {
     // Avoid dangling proxy pointer when we switch widgets.
     // the widget will cleanup the proxy, as it is its kid.
+#ifdef QT_WIDGETS_LIB
     m_proxyStyle = nullptr;
+#endif
 
     // sets the Qt Object Name for the purposes
     // of setPadding() -- this is because QStyleSheet
@@ -316,7 +329,11 @@ void RenderFormElement::setQWidget(QWidget *w)
 
 void RenderFormElement::updateFromElement()
 {
+#ifdef QT_WIDGETS_LIB
     m_widget->setEnabled(!element()->disabled());
+#else
+    m_widget->setProperty("enabled", !element()->disabled());
+#endif
 
     // If we've disabled a focused element, clear its focus,
     // so Qt doesn't do funny stuff like let one type into a disabled
@@ -376,8 +393,10 @@ int RenderFormElement::calcContentWidth(int w) const
 {
     if (!shouldDisableNativeBorders()) {
         if (style()->boxSizing() == CONTENT_BOX) {
+#ifdef QT_WIDGETS_LIB
             int nativeBorderWidth = m_widget->style()->pixelMetric(QStyle::PM_DefaultFrameWidth, nullptr, m_widget);
             return RenderBox::calcContentWidth(w) + 2 * nativeBorderWidth;
+#endif
         }
     }
 
@@ -388,8 +407,10 @@ int RenderFormElement::calcContentHeight(int h) const
 {
     if (!shouldDisableNativeBorders()) {
         if (style()->boxSizing() == CONTENT_BOX) {
+#ifdef QT_WIDGETS_LIB
             int nativeBorderWidth = m_widget->style()->pixelMetric(QStyle::PM_DefaultFrameWidth, nullptr, m_widget);
             return RenderBox::calcContentHeight(h) + 2 * nativeBorderWidth;
+#endif
         }
     }
 
@@ -454,7 +475,11 @@ void RenderButton::layout()
         // button text hiding 'trick' that makes use of negative text-indent,
         // which we do not support on form widgets.
         int ti = style()->textIndent().minWidth(containingBlockWidth());
+#ifdef QT_WIDGETS_LIB
         if (m_widget->width() <= qAbs(ti)) {
+#else
+        if (m_widget->property("width").toInt() <= qAbs(ti)) {
+#endif
             needsTextIndentHack = true;
         }
     }
@@ -470,8 +495,10 @@ void RenderButton::setStyle(RenderStyle *style)
     if (shouldDisableNativeBorders()) {
         // we paint the borders ourselves on this button,
         // remove the widget's native ones.
+#ifdef QT_WIDGETS_LIB
         KHTMLProxyStyle *style = static_cast<KHTMLProxyStyle *>(getProxyStyle());
         style->noBorder = true;
+#endif
     }
 }
 
@@ -480,6 +507,7 @@ void RenderButton::setStyle(RenderStyle *style)
 RenderCheckBox::RenderCheckBox(HTMLInputElementImpl *element)
     : RenderButton(element)
 {
+#ifdef QT_WIDGETS_LIB
     CheckBoxWidget *b = new CheckBoxWidget(view()->widget());
     //b->setAutoMask(true);
     b->setMouseTracking(true);
@@ -489,6 +517,10 @@ RenderCheckBox::RenderCheckBox(HTMLInputElementImpl *element)
     b->setChecked(element->checked());
 
     connect(b, SIGNAL(stateChanged(int)), this, SLOT(slotStateChanged(int)));
+#else
+    //AFA-FIXME
+#endif
+
     m_ignoreStateChanged = false;
 }
 
@@ -496,22 +528,34 @@ void RenderCheckBox::calcMinMaxWidth()
 {
     KHTMLAssert(!minMaxKnown());
 
+#ifdef QT_WIDGETS_LIB
     QCheckBox *cb = static_cast<QCheckBox *>(m_widget);
     QSize s(qMin(22, qMax(14, cb->style()->pixelMetric(QStyle::PM_IndicatorWidth))),
             qMin(22, qMax(12, cb->style()->pixelMetric(QStyle::PM_IndicatorHeight))));
     setIntrinsicWidth(s.width());
     setIntrinsicHeight(s.height());
+#else
+    //AFA-FIXME
+#endif
 
     RenderButton::calcMinMaxWidth();
 }
 
 void RenderCheckBox::updateFromElement()
 {
+#ifdef QT_WIDGETS_LIB
     if (widget()->isChecked() != element()->checked()) {
         m_ignoreStateChanged = true;
         widget()->setChecked(element()->checked());
         m_ignoreStateChanged = false;
     }
+#else
+    if (widget()->property("checked").toBool() != element()->checked()) {
+        m_ignoreStateChanged = true;
+        widget()->setProperty("checked", element()->checked());
+        m_ignoreStateChanged = false;
+    }
+#endif
 
     RenderButton::updateFromElement();
 }
@@ -544,6 +588,7 @@ bool RenderCheckBox::handleEvent(const DOM::EventImpl &ev)
 RenderRadioButton::RenderRadioButton(HTMLInputElementImpl *element)
     : RenderButton(element)
 {
+#ifdef QT_WIDGETS_LIB
     RadioButtonWidget *b = new RadioButtonWidget(view()->widget());
     b->setMouseTracking(true);
     b->setAutoExclusive(false);
@@ -553,13 +598,20 @@ RenderRadioButton::RenderRadioButton(HTMLInputElementImpl *element)
     b->setChecked(element->checked());
 
     connect(b, SIGNAL(toggled(bool)), this, SLOT(slotToggled(bool)));
+#else
+    //AFA-FIXME
+#endif
     m_ignoreToggled = false;
 }
 
 void RenderRadioButton::updateFromElement()
 {
     m_ignoreToggled = true;
+#ifdef QT_WIDGETS_LIB
     widget()->setChecked(element()->checked());
+#else
+    widget()->setProperty("checked", element()->checked());
+#endif
     m_ignoreToggled = false;
 
     RenderButton::updateFromElement();
@@ -569,11 +621,15 @@ void RenderRadioButton::calcMinMaxWidth()
 {
     KHTMLAssert(!minMaxKnown());
 
+#ifdef QT_WIDGETS_LIB
     QRadioButton *rb = static_cast<QRadioButton *>(m_widget);
     QSize s(qMin(22, qMax(14, rb->style()->pixelMetric(QStyle::PM_ExclusiveIndicatorWidth))),
             qMin(20, qMax(12, rb->style()->pixelMetric(QStyle::PM_ExclusiveIndicatorHeight))));
     setIntrinsicWidth(s.width());
     setIntrinsicHeight(s.height());
+#else
+    //AFA-FIXME
+#endif
 
     RenderButton::calcMinMaxWidth();
 }
@@ -607,27 +663,34 @@ const QLatin1String sBorderNoneSheet("QPushButton{border:none}");
 RenderSubmitButton::RenderSubmitButton(HTMLInputElementImpl *element)
     : RenderButton(element)
 {
+#ifdef QT_WIDGETS_LIB
     PushButtonWidget *p = new PushButtonWidget(view()->widget());
     setQWidget(p);
     //p->setAutoMask(true);
     p->setMouseTracking(true);
     p->setDefault(false);
     p->setAutoDefault(false);
+#else
+    //AFA-FIXME
+#endif
 }
 
 static inline void setStyleSheet_helper(const QString &s, QWidget *w)
 {
     // ### buggy Qt stylesheets mess with the widget palette.
     // force it again after any stylesheet update.
+#ifdef QT_WIDGETS_LIB
     QPalette pal = w->palette();
     w->setStyleSheet(s);
     w->setPalette(pal);
+#endif
 }
 
 void RenderSubmitButton::setPadding()
 {
     // Proxy styling doesn't work well enough for buttons.
     // Use stylesheets instead. tests/css/button-padding-top.html
+#ifdef QT_WIDGETS_LIB
     assert(!m_proxyStyle);
 
     if (!includesPadding()) {
@@ -647,12 +710,14 @@ void RenderSubmitButton::setPadding()
         .arg(RenderWidget::paddingTop())
         .arg(RenderWidget::paddingBottom()) + (shouldDisableNativeBorders() ? sBorderNoneSheet : QString())
         , widget());
+#endif
 }
 
 void RenderSubmitButton::setStyle(RenderStyle *style)
 {
     // Proxy styling doesn't work well enough for buttons.
     // Use stylesheets instead. tests/css/button-padding-top.html
+#ifdef QT_WIDGETS_LIB
     assert(!m_proxyStyle);
     RenderFormElement::setStyle(style);
 
@@ -667,6 +732,9 @@ void RenderSubmitButton::setStyle(RenderStyle *style)
     } else {
         setStyleSheet_helper(s.remove(sBorderNoneSheet), widget());
     }
+#else
+    RenderFormElement::setStyle(style);
+#endif
 }
 
 QString RenderSubmitButton::rawText()
@@ -701,6 +769,7 @@ void RenderSubmitButton::calcMinMaxWidth()
 {
     KHTMLAssert(!minMaxKnown());
 
+#ifdef QT_WIDGETS_LIB
     QString raw = rawText();
     QPushButton *pb = static_cast<QPushButton *>(m_widget);
     pb->setText(raw);
@@ -747,18 +816,23 @@ void RenderSubmitButton::calcMinMaxWidth()
 
     setIntrinsicWidth(s.width());
     setIntrinsicHeight(s.height());
+#endif
 
     RenderButton::calcMinMaxWidth();
 }
 
 void RenderSubmitButton::updateFromElement()
 {
+#ifdef QT_WIDGETS_LIB
     QString oldText = static_cast<QPushButton *>(m_widget)->text();
     QString newText = rawText();
     static_cast<QPushButton *>(m_widget)->setText(newText);
     if (oldText != newText) {
         setNeedsLayoutAndMinMaxRecalc();
     }
+#else
+    //AFA-FIXME
+#endif
     RenderFormElement::updateFromElement();
 }
 
@@ -815,7 +889,9 @@ LineEditWidget::LineEditWidget(DOM::HTMLInputElementImpl *input, KHTMLView *view
     : QLineEdit(parent), m_input(input), m_view(view)
 {
     m_kwp->setIsRedirected(true);
+#ifdef QT_WIDGETS_LIB
     setMouseTracking(true);
+#endif
     //AFA KActionCollection *ac = new KActionCollection(this);
     //AFA m_spellAction = KStandardAction::spelling(this, SLOT(slotCheckSpelling()), ac);
 
@@ -830,10 +906,10 @@ LineEditWidget::~LineEditWidget()
 
 void LineEditWidget::slotCheckSpelling()
 {
-    if (text().isEmpty()) {
-        return;
-    }
     //AFA
+//    if (text().isEmpty()) {
+//        return;
+//    }
 //    Sonnet::Dialog *spellDialog = new Sonnet::Dialog(new Sonnet::BackgroundChecker(this), nullptr);
 //    connect(spellDialog, SIGNAL(replace(QString,int,QString)), this, SLOT(spellCheckerCorrected(QString,int,QString)));
 //    connect(spellDialog, SIGNAL(misspelling(QString,int)), this, SLOT(spellCheckerMisspelling(QString,int)));
@@ -851,22 +927,28 @@ void LineEditWidget::spellCheckerMisspelling(const QString &_text, int pos)
 
 void LineEditWidget::setFocus()
 {
+#ifdef QT_WIDGETS_LIB
     QLineEdit::setFocus();
     end(false);
+#endif
 }
 
 void LineEditWidget::highLightWord(unsigned int length, unsigned int pos)
 {
+#ifdef QT_WIDGETS_LIB
     setSelection(pos, length);
+#endif
 }
 
 void LineEditWidget::spellCheckerCorrected(const QString &old, int pos, const QString &corr)
 {
+#ifdef QT_WIDGETS_LIB
     if (old != corr) {
         setSelection(pos, old.length());
         insert(corr);
         setSelection(pos, corr.length());
     }
+#endif
 }
 
 void LineEditWidget::spellCheckerFinished()
@@ -875,9 +957,11 @@ void LineEditWidget::spellCheckerFinished()
 
 void LineEditWidget::slotSpellCheckDone(const QString &s)
 {
+#ifdef QT_WIDGETS_LIB
     if (s != text()) {
         setText(s);
     }
+#endif
 }
 
 namespace khtml
@@ -965,39 +1049,41 @@ void WebShortcutCreator::createFile(QString query, QString name, QString keys)
 
 bool WebShortcutCreator::askData(QString &name, QString &keys)
 {
-    QDialog *dialog = new QDialog();
-    dialog->setWindowTitle(name);
-    QVBoxLayout *mainLayout = new QVBoxLayout();
-    dialog->setLayout(mainLayout);
+    //AFA
+    return false;
+//    QDialog *dialog = new QDialog();
+//    dialog->setWindowTitle(name);
+//    QVBoxLayout *mainLayout = new QVBoxLayout();
+//    dialog->setLayout(mainLayout);
 
-    QHBoxLayout *layout = new QHBoxLayout();
-    mainLayout->addLayout(layout);
-    QLabel *label = new QLabel(i18n("Search &provider name:"), dialog);
-    layout->addWidget(label);
-    QLineEdit *nameEdit = new QLineEdit(i18n("New search provider"), dialog);
-    label->setBuddy(nameEdit);
-    layout->addWidget(nameEdit);
-    layout = new QHBoxLayout();
-    mainLayout->addLayout(layout);
-    label = new QLabel(i18n("UR&I shortcuts:"), dialog);
-    layout->addWidget(label);
-    QLineEdit *keysEdit = new QLineEdit(dialog);
-    label->setBuddy(keysEdit);
-    layout->addWidget(keysEdit);
+//    QHBoxLayout *layout = new QHBoxLayout();
+//    mainLayout->addLayout(layout);
+//    QLabel *label = new QLabel(i18n("Search &provider name:"), dialog);
+//    layout->addWidget(label);
+//    QLineEdit *nameEdit = new QLineEdit(i18n("New search provider"), dialog);
+//    label->setBuddy(nameEdit);
+//    layout->addWidget(nameEdit);
+//    layout = new QHBoxLayout();
+//    mainLayout->addLayout(layout);
+//    label = new QLabel(i18n("UR&I shortcuts:"), dialog);
+//    layout->addWidget(label);
+//    QLineEdit *keysEdit = new QLineEdit(dialog);
+//    label->setBuddy(keysEdit);
+//    layout->addWidget(keysEdit);
 
-    QDialogButtonBox *buttonBox = new QDialogButtonBox(dialog);
-    buttonBox->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-    QObject::connect(buttonBox, SIGNAL(accepted()), dialog, SLOT(accept()));
-    QObject::connect(buttonBox, SIGNAL(rejected()), dialog, SLOT(reject()));
-    mainLayout->addWidget(buttonBox);
+//    QDialogButtonBox *buttonBox = new QDialogButtonBox(dialog);
+//    buttonBox->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+//    QObject::connect(buttonBox, SIGNAL(accepted()), dialog, SLOT(accept()));
+//    QObject::connect(buttonBox, SIGNAL(rejected()), dialog, SLOT(reject()));
+//    mainLayout->addWidget(buttonBox);
 
-    bool res = dialog->exec();
-    if (res) {
-        name = nameEdit->text();
-        keys = keysEdit->text();
-    }
-    delete dialog;
-    return res;
+//    bool res = dialog->exec();
+//    if (res) {
+//        name = nameEdit->text();
+//        keys = keysEdit->text();
+//    }
+//    delete dialog;
+//    return res;
 }
 
 }
@@ -1050,6 +1136,7 @@ void LineEditWidget::slotCreateWebShortcut()
 
 void LineEditWidget::contextMenuEvent(QContextMenuEvent *e)
 {
+#ifdef QT_WIDGETS_LIB
     QMenu *popup = createStandardContextMenu();
 
     if (!popup) {
@@ -1082,6 +1169,7 @@ void LineEditWidget::contextMenuEvent(QContextMenuEvent *e)
 
     popup->exec(e->globalPos());
     delete popup;
+#endif
 }
 
 void LineEditWidget::clearHistoryActivated()
@@ -1121,9 +1209,11 @@ bool LineEditWidget::event(QEvent *e)
 void LineEditWidget::mouseMoveEvent(QMouseEvent *e)
 {
     // hack to prevent Qt from calling setCursor on the widget
+#ifdef QT_WIDGETS_LIB
     setDragEnabled(false);
     QLineEdit::mouseMoveEvent(e);
     setDragEnabled(true);
+#endif
 }
 
 // -----------------------------------------------------------------------------
@@ -1131,6 +1221,7 @@ void LineEditWidget::mouseMoveEvent(QMouseEvent *e)
 RenderLineEdit::RenderLineEdit(HTMLInputElementImpl *element)
     : RenderFormElement(element), m_blockElementUpdates(false)
 {
+#ifdef QT_WIDGETS_LIB
     LineEditWidget *edit = new LineEditWidget(element, view(), view()->widget());
     connect(edit, SIGNAL(returnPressed()), this, SLOT(slotReturnPressed()));
     connect(edit, SIGNAL(textChanged(QString)), this, SLOT(slotTextChanged(QString)));
@@ -1149,11 +1240,16 @@ RenderLineEdit::RenderLineEdit(HTMLInputElementImpl *element)
     }
 
     setQWidget(edit);
+#endif
 }
 
 short RenderLineEdit::baselinePosition(bool f) const
 {
+#ifdef QT_WIDGETS_LIB
     bool hasFrame = static_cast<LineEditWidget *>(widget())->hasFrame();
+#else
+    bool hasFrame = false;
+#endif
     int bTop = hasFrame ? 0 : borderTop();
     int bBottom = hasFrame ? 0 : borderBottom();
     int ret = (height() - RenderWidget::paddingTop() - RenderWidget::paddingBottom() - bTop - bBottom + 1) / 2;
@@ -1166,9 +1262,11 @@ void RenderLineEdit::setStyle(RenderStyle *_style)
 {
     RenderFormElement::setStyle(_style);
 
+#ifdef QT_WIDGETS_LIB
     if (widget()->alignment() != textAlignment()) {
         widget()->setAlignment(textAlignment());
     }
+#endif
 
     bool showClearButton = (!shouldDisableNativeBorders() && !_style->hasBackgroundImage());
     //AFA
@@ -1224,10 +1322,12 @@ void RenderLineEdit::slotReturnPressed()
 
 void RenderLineEdit::handleFocusOut()
 {
+#ifdef QT_WIDGETS_LIB
     if (widget() && widget()->isModified()) {
         element()->onChange();
         widget()->setModified(false);
     }
+#endif
 }
 
 void RenderLineEdit::calcMinMaxWidth()
@@ -1242,6 +1342,7 @@ void RenderLineEdit::calcMinMaxWidth()
     int h = fm.lineSpacing();
     int w = (fm.height() * size) / 2; // on average a character cell is twice as tall as it is wide
 
+#ifdef QT_WIDGETS_LIB
     QStyleOptionFrame opt;
     opt.initFrom(widget());
     if (widget()->hasFrame()) {
@@ -1254,6 +1355,9 @@ void RenderLineEdit::calcMinMaxWidth()
 
     setIntrinsicWidth(s.width());
     setIntrinsicHeight(s.height());
+#else
+    //AFA-FIXME
+#endif
 
     RenderFormElement::calcMinMaxWidth();
 }
@@ -1265,6 +1369,7 @@ void RenderLineEdit::updateFromElement()
         ml = 32767;
     }
 
+#ifdef QT_WIDGETS_LIB
     if (widget()->maxLength() != ml)  {
         widget()->setMaxLength(ml);
     }
@@ -1279,6 +1384,7 @@ void RenderLineEdit::updateFromElement()
     widget()->setReadOnly(element()->readOnly());
 
     widget()->setPlaceholderText(element()->placeholder().string().remove(QLatin1Char('\n')).remove(QLatin1Char('\r')));
+#endif
 
     RenderFormElement::updateFromElement();
 }
@@ -1296,27 +1402,37 @@ void RenderLineEdit::slotTextChanged(const QString &string)
 
 void RenderLineEdit::select()
 {
+#ifdef QT_WIDGETS_LIB
     static_cast<LineEditWidget *>(m_widget)->selectAll();
+#endif
 }
 
 long RenderLineEdit::selectionStart()
 {
+#ifdef QT_WIDGETS_LIB
     LineEditWidget *w = static_cast<LineEditWidget *>(m_widget);
     if (w->hasSelectedText()) {
         return w->selectionStart();
     } else {
         return w->cursorPosition();
     }
+#else
+    return 0;
+#endif
 }
 
 long RenderLineEdit::selectionEnd()
 {
+#ifdef QT_WIDGETS_LIB
     LineEditWidget *w = static_cast<LineEditWidget *>(m_widget);
     if (w->hasSelectedText()) {
         return w->selectionStart() + w->selectedText().length();
     } else {
         return w->cursorPosition();
     }
+#else
+    return 0;
+#endif
 }
 
 void RenderLineEdit::setSelectionStart(long pos)
@@ -1324,10 +1440,12 @@ void RenderLineEdit::setSelectionStart(long pos)
     LineEditWidget *w = static_cast<LineEditWidget *>(m_widget);
     //See whether we have a non-empty selection now.
     long end = selectionEnd();
+#ifdef QT_WIDGETS_LIB
     if (end > pos) {
         w->setSelection(pos, end - pos);
     }
     w->setCursorPosition(pos);
+#endif
 }
 
 void RenderLineEdit::setSelectionEnd(long pos)
@@ -1335,18 +1453,22 @@ void RenderLineEdit::setSelectionEnd(long pos)
     LineEditWidget *w = static_cast<LineEditWidget *>(m_widget);
     //See whether we have a non-empty selection now.
     long start = selectionStart();
+#ifdef QT_WIDGETS_LIB
     if (start < pos) {
         w->setSelection(start, pos - start);
     }
 
     w->setCursorPosition(pos);
+#endif
 }
 
 void RenderLineEdit::setSelectionRange(long start, long end)
 {
     LineEditWidget *w = static_cast<LineEditWidget *>(m_widget);
+#ifdef QT_WIDGETS_LIB
     w->setCursorPosition(end);
     w->setSelection(start, end - start);
+#endif
 }
 
 // ---------------------------------------------------------------------------
@@ -1539,6 +1661,7 @@ void RenderFieldset::setStyle(RenderStyle *_style)
 RenderFileButton::RenderFileButton(HTMLInputElementImpl *element)
     : RenderFormElement(element)
 {
+#ifdef QT_WIDGETS_LIB
     FileButtonWidget *w = new FileButtonWidget(view()->widget());
 
     //AFA
@@ -1551,6 +1674,7 @@ RenderFileButton::RenderFileButton(HTMLInputElementImpl *element)
 //    connect(w, SIGNAL(urlSelected(QUrl)), this, SLOT(slotUrlSelected()));
 
     setQWidget(w);
+#endif
     m_haveFocus = false;
 }
 
@@ -1576,6 +1700,7 @@ void RenderFileButton::calcMinMaxWidth()
     //AFA QLineEdit *edit = widget()->lineEdit();
     QWidget *edit = widget();
 
+#ifdef QT_WIDGETS_LIB
     QStyleOptionFrame opt;
     opt.initFrom(edit);
     if (false/*AFA edit->hasFrame()*/) {
@@ -1590,6 +1715,7 @@ void RenderFileButton::calcMinMaxWidth()
 
     setIntrinsicWidth(s.width() + bs.width());
     setIntrinsicHeight(qMax(s.height(), bs.height()));
+#endif
 
     RenderFormElement::calcMinMaxWidth();
 }
@@ -1681,14 +1807,17 @@ ComboBoxWidget::ComboBoxWidget(QWidget *parent)
 {
     m_kwp->setIsRedirected(true);
     //setAutoMask(true);
+#ifdef QT_WIDGETS_LIB
     if (view()) {
         view()->installEventFilter(this);
     }
     setMouseTracking(true);
+#endif
 }
 
 void ComboBoxWidget::showPopup()
 {
+#ifdef QT_WIDGETS_LIB
     QPoint p = pos();
     QPoint dest(p);
     QWidget *parent = parentWidget();
@@ -1718,11 +1847,14 @@ void ComboBoxWidget::showPopup()
     }
     move(p);
     blockSignals(blocked);
+#endif
 }
 
 void ComboBoxWidget::hidePopup()
 {
+#ifdef QT_WIDGETS_LIB
     QComboBox::hidePopup();
+#endif
 }
 
 bool ComboBoxWidget::event(QEvent *e)
@@ -1747,6 +1879,7 @@ bool ComboBoxWidget::event(QEvent *e)
 
 bool ComboBoxWidget::eventFilter(QObject *dest, QEvent *e)
 {
+#ifdef QT_WIDGETS_LIB
     if (dest == view() &&  e->type() == QEvent::KeyPress) {
         QKeyEvent *ke = static_cast<QKeyEvent *>(e);
         bool forward = false;
@@ -1758,7 +1891,7 @@ bool ComboBoxWidget::eventFilter(QObject *dest, QEvent *e)
             // ugly hack. emulate popdownlistbox() (private in QComboBox)
             // we re-use ke here to store the reference to the generated event.
             ke = new QKeyEvent(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
-            QApplication::sendEvent(dest, ke);
+            QCoreApplication::sendEvent(dest, ke);
             focusNextPrevChild(forward);
             delete ke;
             return true;
@@ -1766,6 +1899,7 @@ bool ComboBoxWidget::eventFilter(QObject *dest, QEvent *e)
             return QComboBox::eventFilter(dest, e);
         }
     }
+#endif
     return QComboBox::eventFilter(dest, e);
 }
 
@@ -1780,7 +1914,9 @@ void ComboBoxWidget::keyPressEvent(QKeyEvent *e)
         e->ignore();
         return;
     }
+#ifdef QT_WIDGETS_LIB
     QComboBox::keyPressEvent(e);
+#endif
 }
 
 // -------------------------------------------------------------------------
@@ -1799,21 +1935,27 @@ RenderSelect::RenderSelect(HTMLSelectElementImpl *element)
         setQWidget(createListBox());
     } else {
         setQWidget(createComboBox());
+#ifdef QT_WIDGETS_LIB
         getProxyStyle(); // We always need it to make sure popups are big enough
+#endif
     }
 }
 
 void RenderSelect::clearItemFlags(int index, Qt::ItemFlags flags)
 {
     if (m_useListBox) {
+#ifdef QT_WIDGETS_LIB
         QListWidgetItem *item = static_cast<QListWidget *>(m_widget)->item(index);
         item->setFlags(item->flags() & ~flags);
+#endif
     } else {
         QComboBox *combo = static_cast<QComboBox *>(m_widget);
+#ifdef QT_WIDGETS_LIB
         if (QStandardItemModel *model = qobject_cast<QStandardItemModel *>(combo->model())) {
             QStandardItem *item = model->item(index);
             item->setFlags(item->flags() & ~flags);
         }
+#endif
     }
 }
 
@@ -1821,8 +1963,10 @@ void RenderSelect::setStyle(RenderStyle *_style)
 {
     RenderFormElement::setStyle(_style);
     if (!m_useListBox) {
+#ifdef QT_WIDGETS_LIB
         KHTMLProxyStyle *proxyStyle = static_cast<KHTMLProxyStyle *>(getProxyStyle());
         proxyStyle->noBorder = shouldDisableNativeBorders();
+#endif
     }
 }
 
@@ -1854,9 +1998,11 @@ void RenderSelect::updateFromElement()
         }
 
         if (m_useListBox && oldMultiple != m_multiple) {
+#ifdef QT_WIDGETS_LIB
             static_cast<QListWidget *>(m_widget)->setSelectionMode(m_multiple ?
                     QListWidget::ExtendedSelection
                     : QListWidget::SingleSelection);
+#endif
         }
         m_selectionChanged = true;
         m_optionsChanged = true;
@@ -1869,13 +2015,13 @@ void RenderSelect::updateFromElement()
         }
         const QVector<HTMLGenericFormElementImpl *> listItems = element()->listItems();
         int listIndex;
-
+#ifdef QT_WIDGETS_LIB
         if (m_useListBox) {
             static_cast<QListWidget *>(m_widget)->clear();
         } else {
             static_cast<QComboBox *>(m_widget)->clear();
         }
-
+#endif
         for (listIndex = 0; listIndex < int(listItems.size()); listIndex++) {
             if (listItems[listIndex]->id() == ID_OPTGROUP) {
                 DOMString text = listItems[listIndex]->getAttribute(ATTR_LABEL);
@@ -1884,14 +2030,14 @@ void RenderSelect::updateFromElement()
                 }
 
                 text = text.implementation()->collapseWhiteSpace(false, false);
-
+#ifdef QT_WIDGETS_LIB
                 if (m_useListBox) {
                     QListWidgetItem *item = new QListWidgetItem(QString(text.implementation()->s, text.implementation()->l));
                     static_cast<QListWidget *>(m_widget)->insertItem(listIndex, item);
                 } else {
                     static_cast<QComboBox *>(m_widget)->insertItem(listIndex, QString(text.implementation()->s, text.implementation()->l));
                 }
-
+#endif
                 bool disabled = !listItems[listIndex]->getAttribute(ATTR_DISABLED).isNull();
                 if (disabled) {
                     clearItemFlags(listIndex, Qt::ItemIsSelectable | Qt::ItemIsEnabled);
@@ -1919,13 +2065,13 @@ void RenderSelect::updateFromElement()
                 } else {
                     text = domText.string();
                 }
-
+#ifdef QT_WIDGETS_LIB
                 if (m_useListBox) {
                     static_cast<QListWidget *>(m_widget)->insertItem(listIndex, text);
                 } else {
                     static_cast<QComboBox *>(m_widget)->insertItem(listIndex, text);
                 }
-
+#endif
                 bool disabled = !optElem->getAttribute(ATTR_DISABLED).isNull();
                 if (parentOptGroup) {
                     disabled = disabled || !parentOptGroup->getAttribute(ATTR_DISABLED).isNull();
@@ -1943,8 +2089,10 @@ void RenderSelect::updateFromElement()
 
         // QComboBox caches the size hint unless you call setFont (ref: TT docu)
         if (!m_useListBox) {
+#ifdef QT_WIDGETS_LIB
             QComboBox *that = static_cast<QComboBox *>(m_widget);
             that->setFont(that->font());
+#endif
         }
         setNeedsLayoutAndMinMaxRecalc();
         m_optionsChanged = false;
@@ -1999,7 +2147,7 @@ void RenderSelect::layout()
     // ### maintain selection properly between type/size changes, and work
     // out how to handle multiselect->singleselect (probably just select
     // first selected one)
-
+#ifdef QT_WIDGETS_LIB
     // calculate size
     if (m_useListBox) {
         QListWidget *w = static_cast<QListWidget *>(m_widget);
@@ -2074,6 +2222,7 @@ void RenderSelect::layout()
         setIntrinsicWidth(w);
         setIntrinsicHeight(h);
     }
+#endif
 
     /// uuh, ignore the following line..
     setNeedsLayout(true);
@@ -2087,7 +2236,11 @@ void RenderSelect::layout()
         foundOption = (listItems[i]->id() == ID_OPTION);
     }
 
+#ifdef QT_WIDGETS_LIB
     m_widget->setEnabled(foundOption && ! element()->disabled());
+#else
+    m_widget->setProperty("enabled", foundOption && ! element()->disabled());
+#endif
 }
 
 void RenderSelect::slotSelected(int index) // emitted by the combobox only
@@ -2136,11 +2289,11 @@ void RenderSelect::slotSelected(int index) // emitted by the combobox only
             HTMLOptionElementImpl *opt = static_cast<HTMLOptionElementImpl *>(listItems[index]);
             changed |= (opt->m_selected == false);
             opt->m_selected = true;
-
+#ifdef QT_WIDGETS_LIB
             if (index != static_cast<ComboBoxWidget *>(m_widget)->currentIndex()) {
                 static_cast<ComboBoxWidget *>(m_widget)->setCurrentIndex(index);
             }
-
+#endif
             // When selecting an optgroup item, and we move forward to we
             // shouldn't emit onChange. Hence this bool, the if above doesn't do it.
             if (changed) {
@@ -2165,8 +2318,12 @@ void RenderSelect::slotSelectionChanged() // emitted by the listbox only
         // don't use setSelected() here because it will cause us to be called
         // again with updateSelection.
         if (listItems[i]->id() == ID_OPTION)
+#ifdef QT_WIDGETS_LIB
             static_cast<HTMLOptionElementImpl *>(listItems[i])
             ->m_selected = static_cast<QListWidget *>(m_widget)->item(i)->isSelected();
+#else
+            ;
+#endif
 
     ref();
     element()->onChange();
@@ -2185,6 +2342,7 @@ void RenderSelect::setPadding()
 
 ListBoxWidget *RenderSelect::createListBox()
 {
+#ifdef QT_WIDGETS_LIB
     ListBoxWidget *lb = new ListBoxWidget(view()->widget());
     lb->setSelectionMode(m_multiple ? QListWidget::ExtendedSelection : QListWidget::SingleSelection);
     connect(lb, SIGNAL(itemSelectionChanged()), this, SLOT(slotSelectionChanged()));
@@ -2192,13 +2350,20 @@ ListBoxWidget *RenderSelect::createListBox()
     lb->setMouseTracking(true);
 
     return lb;
+#else
+    return nullptr;
+#endif
 }
 
 ComboBoxWidget *RenderSelect::createComboBox()
 {
+#ifdef QT_WIDGETS_LIB
     ComboBoxWidget *cb = new ComboBoxWidget(view()->widget());
     connect(cb, SIGNAL(activated(int)), this, SLOT(slotSelected(int)));
     return cb;
+#else
+    return nullptr;
+#endif
 }
 
 void RenderSelect::updateSelection()
@@ -2209,8 +2374,12 @@ void RenderSelect::updateSelection()
         // if multi-select, we select only the new selected index
         QListWidget *listBox = static_cast<QListWidget *>(m_widget);
         for (i = 0; i < int(listItems.size()); i++)
+#ifdef QT_WIDGETS_LIB
             listBox->item(i)->setSelected(listItems[i]->id() == ID_OPTION &&
                                           static_cast<HTMLOptionElementImpl *>(listItems[i])->selectedBit());
+#else
+            ;
+#endif
     } else {
         bool found = false;
         int firstOption = i = listItems.size();
@@ -2219,7 +2388,11 @@ void RenderSelect::updateSelection()
                 if (found) {
                     static_cast<HTMLOptionElementImpl *>(listItems[i])->m_selected = false;
                 } else if (static_cast<HTMLOptionElementImpl *>(listItems[i])->selectedBit()) {
+#ifdef QT_WIDGETS_LIB
                     static_cast<QComboBox *>(m_widget)->setCurrentIndex(i);
+#else
+                    ;
+#endif
                     found = true;
                 }
                 firstOption = i;
@@ -2228,7 +2401,11 @@ void RenderSelect::updateSelection()
         if (!found && firstOption != listItems.size()) {
             // select first option (IE7/Gecko behaviour)
             static_cast<HTMLOptionElementImpl *>(listItems[firstOption])->m_selected = true;
+#ifdef QT_WIDGETS_LIB
             static_cast<QComboBox *>(m_widget)->setCurrentIndex(firstOption);
+#else
+            ;
+#endif
         }
     }
 
@@ -2242,6 +2419,7 @@ TextAreaWidget::TextAreaWidget(int wrap, QWidget *parent)
 {
     m_kwp->setIsRedirected(true);
 
+#ifdef QT_WIDGETS_LIB
     if (wrap != DOM::HTMLTextAreaElementImpl::ta_NoWrap) {
         setLineWrapMode(QTextEdit::WidgetWidth);
     } else {
@@ -2254,6 +2432,7 @@ TextAreaWidget::TextAreaWidget(int wrap, QWidget *parent)
     //AFA KCursor::setAutoHideCursor(viewport(), true);
     setAcceptRichText(false);
     setMouseTracking(true);
+#endif
 }
 
 TextAreaWidget::~TextAreaWidget()
@@ -2262,8 +2441,10 @@ TextAreaWidget::~TextAreaWidget()
 
 void TextAreaWidget::scrollContentsBy(int dx, int dy)
 {
+#ifdef QT_WIDGETS_LIB
     QTextEdit::scrollContentsBy(dx, dy);
     update();
+#endif
 }
 
 bool TextAreaWidget::event(QEvent *e)
@@ -2301,12 +2482,14 @@ void TextAreaWidget::keyPressEvent(QKeyEvent *e)
     // The ComboBoxWidget::keyPressEvent() comment about having to
     // deal with events coming from EventPropagator::sendEvent()
     // directly applies here, too.
+#ifdef QT_WIDGETS_LIB
     if ((e->key() == Qt::Key_Tab || e->key() == Qt::Key_Backtab) &&
             tabChangesFocus()) {
         e->ignore();
         return;
     }
     QTextEdit::keyPressEvent(e);
+#endif
 }
 
 // -------------------------------------------------------------------------
@@ -2318,12 +2501,15 @@ RenderTextArea::RenderTextArea(HTMLTextAreaElementImpl *element)
     setQWidget(edit);
     const KHTMLSettings *settings = view()->part()->settings();
     //AFA edit->setCheckSpellingEnabled(settings->autoSpellCheck());
+#ifdef QT_WIDGETS_LIB
     edit->setTabChangesFocus(! settings->allowTabulation());
-
+#endif
     connect(edit, SIGNAL(textChanged()), this, SLOT(slotTextChanged()));
 
     setText(element->value().string());
+#ifdef QT_WIDGETS_LIB
     m_textAlignment = edit->alignment();
+#endif
 }
 
 RenderTextArea::~RenderTextArea()
@@ -2345,6 +2531,7 @@ void RenderTextArea::calcMinMaxWidth()
 {
     KHTMLAssert(!minMaxKnown());
 
+#ifdef QT_WIDGETS_LIB
     TextAreaWidget *w = static_cast<TextAreaWidget *>(m_widget);
     const QFontMetrics &m = style()->fontMetrics();
     w->setTabStopWidth(8 * m.width(" "));
@@ -2378,6 +2565,7 @@ void RenderTextArea::calcMinMaxWidth()
 
     setIntrinsicWidth(size.width());
     setIntrinsicHeight(size.height());
+#endif
 
     RenderFormElement::calcMinMaxWidth();
 }
@@ -2386,6 +2574,7 @@ void RenderTextArea::setStyle(RenderStyle *_style)
 {
     RenderFormElement::setStyle(_style);
 
+#ifdef QT_WIDGETS_LIB
     TextAreaWidget *w = static_cast<TextAreaWidget *>(m_widget);
 
     if (m_textAlignment != textAlignment()) {
@@ -2419,6 +2608,7 @@ void RenderTextArea::setStyle(RenderStyle *_style)
     } else {
         w->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     }
+#endif
 }
 
 short RenderTextArea::scrollWidth() const
@@ -2428,9 +2618,13 @@ short RenderTextArea::scrollWidth() const
 
 int RenderTextArea::scrollHeight() const
 {
+#ifdef QT_WIDGETS_LIB
     TextAreaWidget *w = static_cast<TextAreaWidget *>(m_widget);
     int contentHeight = qRound(w->document()->size().height());
     return qMax(contentHeight, RenderObject::clientHeight());
+#else
+    return 0;
+#endif
 }
 
 void RenderTextArea::setText(const QString &newText)
@@ -2439,7 +2633,7 @@ void RenderTextArea::setText(const QString &newText)
 
     // When this is called, m_value in the element must have just
     // been set to new value --- see if we have any work to do
-
+#ifdef QT_WIDGETS_LIB
     QString oldText = text();
     int oldTextLen = oldText.length();
     int newTextLen = newText.length();
@@ -2468,12 +2662,17 @@ void RenderTextArea::setText(const QString &newText)
         w->verticalScrollBar()->setValue(cy);
         w->blockSignals(blocked);
     }
+#endif
 }
 
 void RenderTextArea::updateFromElement()
 {
     TextAreaWidget *w = static_cast<TextAreaWidget *>(m_widget);
+#ifdef QT_WIDGETS_LIB
     w->setReadOnly(element()->readOnly());
+#else
+    w->setProperty("readOnly", element()->readOnly());
+#endif
     //AFA w->setClickMessage(element()->placeholder().string());
     RenderFormElement::updateFromElement();
 }
@@ -2485,6 +2684,7 @@ QString RenderTextArea::text()
 
     QString txt;
     TextAreaWidget *w = static_cast<TextAreaWidget *>(m_widget);
+#ifdef QT_WIDGETS_LIB
 #ifdef __GNUC__
 #warning "Physical wrap mode needs testing (also in ::selection*)"
 #endif
@@ -2503,6 +2703,7 @@ QString RenderTextArea::text()
     } else {
         txt = w->toPlainText();
     }
+#endif
     return txt;
 }
 
@@ -2524,19 +2725,29 @@ void RenderTextArea::slotTextChanged()
 
 void RenderTextArea::select()
 {
+#ifdef QT_WIDGETS_LIB
     static_cast<TextAreaWidget *>(m_widget)->selectAll();
+#endif
 }
 
 long RenderTextArea::selectionStart()
 {
+#ifdef QT_WIDGETS_LIB
     TextAreaWidget *w = static_cast<TextAreaWidget *>(m_widget);
     return w->textCursor().selectionStart();
+#else
+    return 0;
+#endif
 }
 
 long RenderTextArea::selectionEnd()
 {
+#ifdef QT_WIDGETS_LIB
     TextAreaWidget *w = static_cast<TextAreaWidget *>(m_widget);
     return w->textCursor().selectionEnd();
+#else
+    return 0;
+#endif
 }
 
 static void setPhysWrapPos(QTextCursor &otc, bool selStart, int idx)
@@ -2557,6 +2768,7 @@ static void setPhysWrapPos(QTextCursor &otc, bool selStart, int idx)
 
 void RenderTextArea::setSelectionStart(long offset)
 {
+#ifdef QT_WIDGETS_LIB
     TextAreaWidget *w = static_cast<TextAreaWidget *>(m_widget);
     QTextCursor tc = w->textCursor();
     if (element()->wrap() == DOM::HTMLTextAreaElementImpl::ta_Physical) {
@@ -2565,10 +2777,12 @@ void RenderTextArea::setSelectionStart(long offset)
         tc.setPosition(offset);
     }
     w->setTextCursor(tc);
+#endif
 }
 
 void RenderTextArea::setSelectionEnd(long offset)
 {
+#ifdef QT_WIDGETS_LIB
     TextAreaWidget *w = static_cast<TextAreaWidget *>(m_widget);
     QTextCursor tc = w->textCursor();
     if (element()->wrap() == DOM::HTMLTextAreaElementImpl::ta_Physical) {
@@ -2577,6 +2791,7 @@ void RenderTextArea::setSelectionEnd(long offset)
         tc.setPosition(offset, QTextCursor::KeepAnchor);
     }
     w->setTextCursor(tc);
+#endif
 }
 
 void RenderTextArea::setSelectionRange(long start, long end)

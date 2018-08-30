@@ -58,7 +58,9 @@
 #include "html/html_blockimpl.h"
 #include "xml/dom_restyler.h"
 
+#ifdef QT_WIDGETS_LIB
 #include <QStyle>
+#endif
 #include <QtCore/QStack>
 
 using namespace DOM;
@@ -800,10 +802,14 @@ void RenderLayer::scrollToOffset(int x, int y, bool updateScrollbars, bool repai
 
     if (updateScrollbars) {
         if (m_hBar) {
+#ifdef QT_WIDGETS_LIB
             m_hBar->setValue(scrollXOffset());
+#endif
         }
         if (m_vBar) {
+#ifdef QT_WIDGETS_LIB
             m_vBar->setValue(m_scrollY);
+#endif
         }
     }
 
@@ -822,15 +828,19 @@ void RenderLayer::updateScrollPositionFromScrollbars()
     int newY = m_scrollY;
 
     if (m_hBar) {
+#ifdef QT_WIDGETS_LIB
         bool rtl = (m_hBar->layoutDirection() == Qt::RightToLeft);
         newX = rtl ? m_hBar->maximum() - m_hBar->value() : m_hBar->value();
+#endif
         if (newX != m_scrollX) {
             needUpdate = true;
         }
     }
 
     if (m_vBar) {
+#ifdef QT_WIDGETS_LIB
         newY = m_vBar->value();
+#endif
         if (newY != m_scrollY) {
             needUpdate = true;
         }
@@ -847,6 +857,7 @@ RenderLayer::showScrollbar(Qt::Orientation o, bool show)
     ScrollBarWidget *sb = (o == Qt::Horizontal) ? m_hBar : m_vBar;
 
     if (show && !sb) {
+#ifdef QT_WIDGETS_LIB
         KHTMLView *view = m_object->document()->view();
         sb = new ScrollBarWidget(o, view->widget());
         sb->move(0, -50000);
@@ -856,6 +867,7 @@ RenderLayer::showScrollbar(Qt::Orientation o, bool show)
             m_scrollMediator = new RenderScrollMediator(this);
         }
         m_scrollMediator->connect(sb, SIGNAL(valueChanged(int)), SLOT(slotValueChanged()));
+#endif
     } else if (!show && sb) {
         delete sb;
         sb = nullptr;
@@ -873,7 +885,11 @@ bool RenderLayer::hasReversedScrollbar() const
     if (!m_vBar) {
         return false;
     }
+#ifdef QT_WIDGETS_LIB
     return (m_vBar->layoutDirection() == Qt::RightToLeft);
+#else
+    return false;
+#endif
 }
 
 int RenderLayer::verticalScrollbarWidth()
@@ -881,11 +897,14 @@ int RenderLayer::verticalScrollbarWidth()
     if (!m_vBar) {
         return 0;
     }
-
+#ifdef QT_WIDGETS_LIB
 #ifdef APPLE_CHANGES
     return m_vBar->width();
 #else
     return m_vBar->style()->pixelMetric(QStyle::PM_ScrollBarExtent);
+#endif
+#else
+    return 0;
 #endif
 
 }
@@ -895,17 +914,20 @@ int RenderLayer::horizontalScrollbarHeight()
     if (!m_hBar) {
         return 0;
     }
-
+#ifdef QT_WIDGETS_LIB
 #ifdef APPLE_CHANGES
     return m_hBar->height();
 #else
     return m_hBar->style()->pixelMetric(QStyle::PM_ScrollBarExtent);
 #endif
-
+#else
+    return 0;
+#endif
 }
 
 void RenderLayer::positionScrollbars(const QRect &absBounds)
 {
+#ifdef QT_WIDGETS_LIB
 #ifdef APPLE_CHANGES
     if (m_vBar) {
         view->addChild(m_vBar, absBounds.x() + absBounds.width() - m_object->borderRight() - m_vBar->width(),
@@ -955,6 +977,8 @@ void RenderLayer::positionScrollbars(const QRect &absBounds)
         m_hBar->m_kwp->setPos(QPoint(hBarRect.x(), hBarRect.y()));
     }
 #endif
+#else
+#endif
 }
 
 #define LINE_STEP   10
@@ -969,7 +993,7 @@ void RenderLayer::checkScrollbarsAfterLayout()
         m_scrollLeft = m_object->leftmostPosition(true);
         m_scrollTop = m_object->highestPosition(true);
     */
-
+#ifdef QT_WIDGETS_LIB
     int clientWidth = m_object->clientWidth();
     int clientHeight = m_object->clientHeight();
     m_scrollWidth = clientWidth;
@@ -1073,6 +1097,7 @@ void RenderLayer::checkScrollbarsAfterLayout()
         m_vBar->setPageStep(pageStep);
         m_vBar->setRange(0, needVerticalBar ? m_scrollHeight - clientHeight : 0);
     }
+#endif
 }
 
 void RenderLayer::paintScrollbars(RenderObject::PaintInfo &pI)
@@ -1080,7 +1105,7 @@ void RenderLayer::paintScrollbars(RenderObject::PaintInfo &pI)
     if (!m_object->element()) {
         return;
     }
-
+#ifdef QT_WIDGETS_LIB
     if (m_hBar) {
         if (!m_buffer[0] || m_buffer[0]->size() != m_hBar->size()) {
             delete m_buffer[0];
@@ -1099,6 +1124,7 @@ void RenderLayer::paintScrollbars(RenderObject::PaintInfo &pI)
         QPoint p = m_vBar->m_kwp->absolutePos();
         RenderWidget::paintWidget(pI, m_vBar, p.x(), p.y(), tmp);
     }
+#endif
 }
 
 void RenderLayer::paint(QPainter *p, const QRect &damageRect, bool selectionOnly)

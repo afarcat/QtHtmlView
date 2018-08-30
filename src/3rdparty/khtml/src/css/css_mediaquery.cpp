@@ -37,9 +37,11 @@
 #include "xml/dom_stringimpl.h"
 #include <QHash>
 #include <limits.h>
+#ifdef QT_WIDGETS_LIB
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QColormap>
+#endif
 
 using namespace DOM;
 using namespace khtml;
@@ -384,8 +386,10 @@ static bool color_indexMediaFeatureEval(CSSValueImpl *value, RenderStyle *, KHTM
     if (printing) {
         numColors = pd->colorCount();
     } else {
+#ifdef QT_WIDGETS_LIB
         int sn = QApplication::desktop()->screenNumber(rootPart->view());
         numColors = QApplication::desktop()->screen(sn)->colorCount();
+#endif
     }
     if (numColors == INT_MAX) {
         numColors = UINT_MAX;
@@ -414,10 +418,12 @@ static bool colorMediaFeatureEval(CSSValueImpl *value, RenderStyle *, KHTMLPart 
         }
         // assume printer is either b&w or color.
     } else {
+#ifdef QT_WIDGETS_LIB
         int sn = QApplication::desktop()->screenNumber(rootPart->view());
         if (QColormap::instance(sn).mode() != QColormap::Gray) {
             bitsPerComponent = QApplication::desktop()->screen(sn)->depth() / 3;
         }
+#endif
     }
     if (value && bitsPerComponent) {
         float number = 0;
@@ -442,12 +448,14 @@ static bool monochromeMediaFeatureEval(CSSValueImpl *value, RenderStyle *, KHTML
         }
         // assume printer is either b&w or color.
     } else {
+#ifdef QT_WIDGETS_LIB
         int sn = QApplication::desktop()->screenNumber(rootPart->view());
         if (QApplication::desktop()->screen(sn)->depth() == 1) {
             depth = 1;
         } else if (QColormap::instance(sn).mode() == QColormap::Gray) {
             depth = QApplication::desktop()->screen(sn)->depth();
         }
+#endif
     }
     if (value) {
         float number = 0;
@@ -471,7 +479,11 @@ static bool device_aspect_ratioMediaFeatureEval(CSSValueImpl *value, RenderStyle
         if (printing) {
             sg = QRect(0, 0, pd->width(), pd->height());
         } else {
+#ifdef QT_WIDGETS_LIB
             sg = QApplication::desktop()->screen(QApplication::desktop()->screenNumber(rootPart->view()))->rect();
+#else
+            //AFA-FIXME
+#endif
         }
         if (parseAspectRatio(value, h, v)) {
             return v != 0  && compareValue(sg.width() * v, sg.height() * h, op);
@@ -576,7 +588,9 @@ static bool device_heightMediaFeatureEval(CSSValueImpl *value, RenderStyle *styl
         if (printing) {
             height = pd->height();
         } else {
+#ifdef QT_WIDGETS_LIB
             height = QApplication::desktop()->screen(QApplication::desktop()->screenNumber(rootPart->view()))->rect().height();
+#endif
             doc = static_cast<DOM::DocumentImpl *>(part->document()/*AFA .handle()*/);
         }
         int logicalDpiY = doc->logicalDpiY();
@@ -601,7 +615,9 @@ static bool device_widthMediaFeatureEval(CSSValueImpl *value, RenderStyle *style
         if (printing) {
             width = pd->width();
         } else {
+#ifdef QT_WIDGETS_LIB
             width = QApplication::desktop()->screen(QApplication::desktop()->screenNumber(rootPart->view()))->rect().width();
+#endif
             doc = static_cast<DOM::DocumentImpl *>(part->document()/*AFA .handle()*/);
         }
         int logicalDpiY = doc->logicalDpiY();

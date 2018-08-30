@@ -29,7 +29,12 @@
 #include <QtCore/QObject>
 #include <QtCore/QPointer>
 #include <QtCore/QStringList>
+#ifdef QT_WIDGETS_LIB
 #include <QWidget>
+#else
+#include <QQuickItem>
+#define QWidget QQuickItem
+#endif
 
 // -------------------------------------------------------------------------
 class KHTMLPart;

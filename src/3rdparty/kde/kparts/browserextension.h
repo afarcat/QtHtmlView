@@ -28,7 +28,9 @@
 
 #include <qplatformdefs.h> //mode_t
 
+#ifdef USE_WIDGETS_LIB
 #include <QAction>
+#endif
 
 template <class Key, class T> class QMap;
 template<typename T> class QList;
@@ -266,7 +268,9 @@ public:
      * "linkactions" for actions related to hyperlinks,
      * "partactions" for any other actions provided by the part
      */
+#ifdef USE_WIDGETS_LIB
     typedef QMap<QString, QList<QAction *> > ActionGroupMap;
+#endif
 
 Q_SIGNALS:
     /**
@@ -377,11 +381,13 @@ Q_SIGNALS:
      * @param flags enables/disables certain builtin actions in the popupmenu
      * @param actionGroups named groups of actions which should be inserted into the popup, see ActionGroupMap
      */
+#ifdef USE_WIDGETS_LIB
     void popupMenu(const QPoint &global, const KFileItemList &items,
                    const KParts::OpenUrlArguments &args = KParts::OpenUrlArguments(),
                    const KParts::BrowserArguments &browserArgs = KParts::BrowserArguments(),
                    KParts::BrowserExtension::PopupFlags flags = KParts::BrowserExtension::DefaultPopupItems,
                    const KParts::BrowserExtension::ActionGroupMap &actionGroups = ActionGroupMap());
+#endif
 
     /**
      * Emit this to make the browser show a standard popup menu for the given @p url.
@@ -397,12 +403,14 @@ Q_SIGNALS:
      * @param flags enables/disables certain builtin actions in the popupmenu
      * @param actionGroups named groups of actions which should be inserted into the popup, see ActionGroupMap
      */
+#ifdef USE_WIDGETS_LIB
     void popupMenu(const QPoint &global, const QUrl &url,
                    mode_t mode = static_cast<mode_t>(-1),
                    const KParts::OpenUrlArguments &args = KParts::OpenUrlArguments(),
                    const KParts::BrowserArguments &browserArgs = KParts::BrowserArguments(),
                    KParts::BrowserExtension::PopupFlags flags = KParts::BrowserExtension::DefaultPopupItems,
                    const KParts::BrowserExtension::ActionGroupMap &actionGroups = ActionGroupMap());
+#endif
 
     /**
      * Inform the hosting application about the current selection.

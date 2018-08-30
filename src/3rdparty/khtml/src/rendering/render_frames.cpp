@@ -665,7 +665,9 @@ void RenderPart::setWidget(QWidget *widget)
 
     setQWidget(widget);
     if (widget) {
+#ifdef QT_WIDGETS_LIB
         widget->setFocusPolicy(Qt::WheelFocus);
+#endif
         if (widget->inherits("KHTMLView")) {
             connect(widget, SIGNAL(cleared()), this, SLOT(slotViewCleared()));
         }
@@ -707,7 +709,9 @@ void RenderFrame::slotViewCleared()
         // qCDebug(KHTML_LOG) << "frame is a scrollarea!";
 #endif
         if (!element()->frameBorder || !((static_cast<HTMLFrameSetElementImpl *>(element()->parentNode()))->frameBorder())) {
+#ifdef QT_WIDGETS_LIB
             view->setFrameStyle(QFrame::NoFrame);
+#endif
         }
         if (KHTMLView *htmlView = qobject_cast<KHTMLView *>(view)) {
 #ifdef DEBUG_LAYOUT
@@ -723,8 +727,10 @@ void RenderFrame::slotViewCleared()
             }
         } else {
             // those are no more virtual in Qt4 ;(
+#ifdef QT_WIDGETS_LIB
             view->setVerticalScrollBarPolicy(element()->scrolling);
             view->setHorizontalScrollBarPolicy(element()->scrolling);
+#endif
         }
     }
 
@@ -771,7 +777,9 @@ void RenderPartObject::slotViewCleared()
             marginw = frame->marginWidth;
             marginh = frame->marginHeight;
         }
+#ifdef QT_WIDGETS_LIB
         view->setFrameStyle(frameStyle);
+#endif
         if (KHTMLView *htmlView = qobject_cast<KHTMLView *>(view)) {
 #ifdef DEBUG_LAYOUT
             // qCDebug(KHTML_LOG) << "frame is a KHTMLview!";
@@ -787,8 +795,10 @@ void RenderPartObject::slotViewCleared()
             }
         } else {
             // those are no more virtual in Qt4 ;(
+#ifdef QT_WIDGETS_LIB
             view->setVerticalScrollBarPolicy(scroll);
             view->setHorizontalScrollBarPolicy(scroll);
+#endif
         }
 
     }

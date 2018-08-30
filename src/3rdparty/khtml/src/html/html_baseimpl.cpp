@@ -492,11 +492,13 @@ void HTMLFrameElementImpl::setFocus(bool received)
     if (!renderFrame || !renderFrame->widget()) {
         return;
     }
+#ifdef QT_WIDGETS_LIB
     if (received) {
         renderFrame->widget()->setFocus();
     } else {
         renderFrame->widget()->clearFocus();
     }
+#endif
 }
 
 DocumentImpl *HTMLFrameElementImpl::contentDocument() const

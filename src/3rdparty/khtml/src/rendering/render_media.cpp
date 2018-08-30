@@ -28,7 +28,9 @@
 #include "media_controls.h"
 //AFA #include <phonon/mediaobject.h>
 //AFA #include <phonon/videowidget.h>
+#ifdef QT_WIDGETS_LIB
 #include <QVBoxLayout>
+#endif
 
 const double doubleMax = 999999999.8; // ### numeric_limits<double>::max()
 const double doubleInf = 999999999.0; // ### numeric_limits<double>::infinity()
@@ -41,9 +43,11 @@ namespace khtml
 RenderMedia::RenderMedia(HTMLMediaElement *element) : RenderWidget(element), m_player(nullptr)
 {
     setInline(true); // <video> is an inline element.
+#ifdef QT_WIDGETS_LIB
     QWidget *container = new QWidget();
     container->setLayout(new QVBoxLayout(container));
     setQWidget(container);
+#endif
 }
 
 void RenderMedia::setPlayer(MediaPlayer *player)
@@ -66,7 +70,7 @@ void RenderMedia::layout()
     calcHeight();
 
     RenderWidget::layout();
-
+#ifdef QT_WIDGETS_LIB
     if (mediaElement()->controls() && widget()->layout()->count() == 1) {
         MediaControls *toolbox = new MediaControls(player(), widget());
         widget()->layout()->addWidget(toolbox);
@@ -76,10 +80,12 @@ void RenderMedia::layout()
             toolbox->show();
         }
     }
+#endif
 }
 
 bool RenderMedia::eventFilter(QObject *o, QEvent *e)
 {
+#ifdef QT_WIDGETS_LIB
     if (widget()->layout()->count() > 1 && mediaElement()->isVideo()) {
         switch (e->type()) {
         case QEvent::Enter:
@@ -93,7 +99,7 @@ bool RenderMedia::eventFilter(QObject *o, QEvent *e)
         default:;
         }
     }
-
+#endif
     return RenderWidget::eventFilter(o, e);
 }
 

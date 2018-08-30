@@ -28,9 +28,16 @@
 #define media_controls_h
 
 //AFA #include <phonon/mediaobject.h>
+#ifdef QT_WIDGETS_LIB
 #include <QWidget>
 #include <QPushButton>
 #include <QToolButton>
+#else
+#include <QQuickItem>
+#define QWidget QQuickItem
+#define QPushButton QQuickItem
+#define QToolButton QQuickItem
+#endif
 
 namespace khtml
 {

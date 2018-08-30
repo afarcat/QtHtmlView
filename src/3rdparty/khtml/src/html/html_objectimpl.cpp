@@ -107,12 +107,20 @@ void HTMLPartContainerElementImpl::setWidget(QWidget *widget)
     QWidget *oldWidget = m_childWidget;
     m_childWidget = widget;
     if (m_childWidget) {
+#ifdef QT_WIDGETS_LIB
         m_childWidget->hide();
+#else
+        m_childWidget->setProperty("visible", false);
+#endif
     }
 
     setWidgetNotify(m_childWidget);
     if (oldWidget) {
+#ifdef QT_WIDGETS_LIB
         oldWidget->hide();
+#else
+        oldWidget->setProperty("visible", false);
+#endif
         oldWidget->deleteLater();
     }
 }

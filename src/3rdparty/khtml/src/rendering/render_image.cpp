@@ -27,7 +27,12 @@
 #include "render_image.h"
 #include "render_canvas.h"
 
+#ifdef QT_WIDGETS_LIB
 #include <qdrawutil.h>
+#else
+#include <qmath.h>
+#endif
+
 #include <QPainter>
 #include <QGuiApplication>
 
@@ -50,6 +55,113 @@
 using namespace DOM;
 using namespace khtml;
 using namespace khtmlImLoad;
+
+#ifndef QT_WIDGETS_LIB
+namespace {
+class PainterStateGuard {
+    Q_DISABLE_COPY(PainterStateGuard)
+public:
+    explicit PainterStateGuard(QPainter *p) : m_painter(p) {}
+    ~PainterStateGuard()
+    {
+        for ( ; m_level > 0; --m_level)
+            m_painter->restore();
+    }
+
+    void save()
+    {
+        m_painter->save();
+        ++m_level;
+    }
+
+    void restore()
+    {
+        m_painter->restore();
+        --m_level;
+    }
+
+private:
+    QPainter *m_painter;
+    int m_level= 0;
+};
+} // namespace
+
+void qDrawShadePanel(QPainter *p, int x, int y, int w, int h,
+                      const QPalette &pal, bool sunken,
+                      int lineWidth, const QBrush *fill)
+{
+    if (w == 0 || h == 0)
+        return;
+    if (Q_UNLIKELY(w < 0 || h < 0 || lineWidth < 0)) {
+        qWarning("qDrawShadePanel: Invalid parameters");
+    }
+
+    PainterStateGuard painterGuard(p);
+    const qreal devicePixelRatio = p->device()->devicePixelRatioF();
+    if (!qFuzzyCompare(devicePixelRatio, qreal(1))) {
+        painterGuard.save();
+        const qreal inverseScale = qreal(1) / devicePixelRatio;
+        p->scale(inverseScale, inverseScale);
+        x = qRound(devicePixelRatio * x);
+        y = qRound(devicePixelRatio * y);
+        w = qRound(devicePixelRatio * w);
+        h = qRound(devicePixelRatio * h);
+        lineWidth = qRound(devicePixelRatio * lineWidth);
+    }
+
+    QColor shade = pal.dark().color();
+    QColor light = pal.light().color();
+    if (fill) {
+        if (fill->color() == shade)
+            shade = pal.shadow().color();
+        if (fill->color() == light)
+            light = pal.midlight().color();
+    }
+    QPen oldPen = p->pen();                        // save pen
+    QVector<QLineF> lines;
+    lines.reserve(2*lineWidth);
+
+    if (sunken)
+        p->setPen(shade);
+    else
+        p->setPen(light);
+    int x1, y1, x2, y2;
+    int i;
+    x1 = x;
+    y1 = y2 = y;
+    x2 = x+w-2;
+    for (i=0; i<lineWidth; i++) {                // top shadow
+        lines << QLineF(x1, y1++, x2--, y2++);
+    }
+    x2 = x1;
+    y1 = y+h-2;
+    for (i=0; i<lineWidth; i++) {                // left shado
+        lines << QLineF(x1++, y1, x2++, y2--);
+    }
+    p->drawLines(lines);
+    lines.clear();
+    if (sunken)
+        p->setPen(light);
+    else
+        p->setPen(shade);
+    x1 = x;
+    y1 = y2 = y+h-1;
+    x2 = x+w-1;
+    for (i=0; i<lineWidth; i++) {                // bottom shadow
+        lines << QLineF(x1++, y1--, x2, y2--);
+    }
+    x1 = x2;
+    y1 = y;
+    y2 = y+h-lineWidth-1;
+    for (i=0; i<lineWidth; i++) {                // right shadow
+        lines << QLineF(x1--, y1++, x2--, y2);
+    }
+    p->drawLines(lines);
+    if (fill)                                // fill with fill color
+        p->fillRect(x+lineWidth, y+lineWidth, w-lineWidth*2, h-lineWidth*2, *fill);
+    p->setPen(oldPen);                        // restore pen
+}
+#endif
 
 // -------------------------------------------------------------------------
 
@@ -266,8 +378,13 @@ void RenderImage::paint(PaintInfo &paintInfo, int _tx, int _ty)
         if (cWidth > 2 && cHeight > 2) {
             if (!berrorPic) {
                 //qDebug("qDrawShadePanel %d/%d/%d/%d", _tx + leftBorder, _ty + topBorder, cWidth, cHeight);
+#ifdef QT_WIDGETS_LIB
                 qDrawShadePanel(paintInfo.p, _tx + leftBorder + leftPad, _ty + topBorder + topPad, cWidth, cHeight,
                                 QGuiApplication::palette(), true, 1);
+#else
+                qDrawShadePanel(paintInfo.p, _tx + leftBorder + leftPad, _ty + topBorder + topPad, cWidth, cHeight,
+                                QGuiApplication::palette(), true, 1, nullptr);
+#endif
             }
 
             QPixmap pix = *Cache::brokenPixmap;

@@ -33,6 +33,7 @@
 
 class QWidget;
 
+#ifdef QT_WIDGETS_LIB
 #include <qtextedit.h>
 //AFA #include <kurlrequester.h>
 #include <qlineedit.h>
@@ -42,6 +43,17 @@ class QWidget;
 #include <QListWidget>
 #include <QProxyStyle>
 #include <qcombobox.h>
+#else
+#include <QQuickItem>
+#define QCheckBox QQuickItem
+#define QRadioButton QQuickItem
+#define QPushButton QQuickItem
+#define QLineEdit QQuickItem
+#define QComboBox QQuickItem
+#define QListWidget QQuickItem
+#define QTextEdit QQuickItem
+#define QScrollBar QQuickItem
+#endif
 #include "dom/dom_misc.h"
 
 class QAction;
@@ -119,8 +131,10 @@ protected:
     void paintOneBackground(QPainter *p, const QColor &c, const BackgroundLayer *bgLayer, QRect clipr, int _tx, int _ty, int w, int height) override;
 
     Qt::Alignment textAlignment() const;
+#ifdef QT_WIDGETS_LIB
     QProxyStyle *getProxyStyle();
     QProxyStyle *m_proxyStyle;
+#endif
     bool m_exposeInternalPadding;
     bool m_isOxygenStyle;
 };
@@ -381,8 +395,8 @@ public:
 
 protected:
     bool event(QEvent *e) override;
-    void mouseMoveEvent(QMouseEvent *e) override;
-    void contextMenuEvent(QContextMenuEvent *e) override;
+    void mouseMoveEvent(QMouseEvent *e) /*AFA override*/;
+    void contextMenuEvent(QContextMenuEvent *e) /*AFA override*/;
 private Q_SLOTS:
     void clearHistoryActivated();
     void slotCheckSpelling();
@@ -533,9 +547,9 @@ public:
 protected:
     bool event(QEvent *) override;
     bool eventFilter(QObject *dest, QEvent *e) override;
-    void keyPressEvent(QKeyEvent *e) override;
-    void showPopup() override;
-    void hidePopup() override;
+    void keyPressEvent(QKeyEvent *e) /*AFA override*/;
+    void showPopup() /*AFA override*/;
+    void hidePopup() /*AFA override*/;
 };
 
 // -------------------------------------------------------------------------
@@ -548,9 +562,11 @@ public:
         m_kwp->setIsRedirected(true);
     }
 protected:
-    void scrollContentsBy(int, int) override
+    void scrollContentsBy(int, int) /*AFA override*/
     {
+#ifdef QT_WIDGETS_LIB
         viewport()->update();
+#endif
     }
     bool event(QEvent *event) override;
 };
@@ -623,8 +639,8 @@ public:
 
 protected:
     bool event(QEvent *e) override;
-    void keyPressEvent(QKeyEvent *e) override;
-    void scrollContentsBy(int dx, int dy) override;
+    void keyPressEvent(QKeyEvent *e) /*AFA override*/;
+    void scrollContentsBy(int dx, int dy) /*AFA override*/;
 
 };
 
@@ -698,7 +714,12 @@ public:
     {
         m_kwp->setIsRedirected(true);
     }
-    ScrollBarWidget(Qt::Orientation orientation, QWidget *parent = nullptr): QScrollBar(orientation, parent)
+    ScrollBarWidget(Qt::Orientation orientation, QWidget *parent = nullptr):
+#ifdef QT_WIDGETS_LIB
+        QScrollBar(orientation, parent)
+#else
+        QScrollBar(parent)
+#endif
     {
         m_kwp->setIsRedirected(true);
     }

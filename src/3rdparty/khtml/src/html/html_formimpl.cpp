@@ -1083,7 +1083,11 @@ bool HTMLGenericFormElementImpl::isFocusableImpl(FocusType ft) const
     }
 
     QWidget *widget = static_cast<RenderWidget *>(m_render)->widget();
+#ifdef QT_WIDGETS_LIB
     return widget && widget->focusPolicy() >= Qt::TabFocus;
+#else
+    return widget && widget->property("activeFocusOnTab").toBool();
+#endif
 }
 
 class FocusHandleWidget : public QWidget
@@ -1091,9 +1095,11 @@ class FocusHandleWidget : public QWidget
 public:
     void focusNextPrev(bool n)
     {
+#ifdef QT_WIDGETS_LIB
         if (!focusNextPrevChild(n) && inherits("QTextEdit")) {
             QWidget::focusNextPrevChild(n);
         }
+#endif
     }
 };
 
@@ -1134,7 +1140,11 @@ void HTMLGenericFormElementImpl::defaultEventHandler(EventImpl *evt)
         if (evt->id() == EventImpl::MOUSEDOWN_EVENT || evt->id() == EventImpl::KEYDOWN_EVENT) {
             setActive();
             if (renderer() && renderer()->isWidget()) {
+#ifdef QT_WIDGETS_LIB
                 static_cast<RenderWidget *>(renderer())->widget()->setFocus();    // ### mmh..
+#else
+                static_cast<RenderWidget *>(renderer())->widget()->setProperty("focus", true);    // ### mmh..
+#endif
             }
         } else if (evt->id() == EventImpl::MOUSEUP_EVENT || evt->id() == EventImpl::KEYUP_EVENT) {
             if (m_active) {
@@ -1789,7 +1799,7 @@ bool HTMLInputElementImpl::encoding(const QTextCodec *codec, khtml::encodingList
         }
 
         // can't submit file in www-url-form encoded
-        QWidget *const toplevel = document()->view() ? document()->view()->topLevelWidget() : nullptr;
+        //AFA QWidget *const toplevel = document()->view() ? document()->view()->topLevelWidget() : nullptr;
         if (multipart) {
             QByteArray filearray;
             //AFA

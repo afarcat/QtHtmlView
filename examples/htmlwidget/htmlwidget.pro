@@ -5,7 +5,7 @@
 TARGET = HtmlWidget
 TEMPLATE = app
 
-QT       += core gui
+QT += core gui
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 INCLUDEPATH += ../../src/compat ../../src/source

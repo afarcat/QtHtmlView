@@ -35,7 +35,12 @@
 
 #include <QtCore/QRegExp>
 #include <QUrl>
+#ifdef QT_WIDGETS_LIB
 #include <QWidget>
+#else
+#include <QQuickItem>
+#define QWidget QQuickItem
+#endif
 
 class QHTMLPartPrivate;
 class KJSProxy;
@@ -303,7 +308,11 @@ public:
      * the view.
      */
     QHTMLPart(QWidget *parentWidget = nullptr,
+#ifdef QT_WIDGETS_LIB
               QObject *parent = nullptr);
+#else
+              QQuickItem *parent = nullptr);
+#endif
     /**
      * Constructs a new QHTMLPart.
      *
@@ -322,7 +331,12 @@ public:
      *   QHTMLPart * p = QHTMLPart( v ); // p will be assigned to v, so that v->part() == p
      * \endcode
      */
-    QHTMLPart(KHTMLView *view, QObject *parent = nullptr);
+    QHTMLPart(KHTMLView *view,
+#ifdef QT_WIDGETS_LIB
+              QObject *parent = nullptr);
+#else
+              QQuickItem *parent = nullptr);
+#endif
 
     /**
      * Destructor.

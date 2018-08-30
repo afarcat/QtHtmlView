@@ -123,8 +123,6 @@ using namespace DOM;
 
 #include <QClipboard>
 #include <QLocale>
-#include <QMenu>
-#include <QToolTip>
 #include <QDrag>
 #include <QMouseEvent>
 #include <QtCore/QFile>
@@ -132,15 +130,22 @@ using namespace DOM;
 #include <QTextDocument>
 #include <QtCore/QDate>
 #include <QtNetwork/QSslCertificate>
-#include <QStatusBar>
-#include <QStyle>
 #include <qmimedatabase.h>
 #include <qplatformdefs.h>
 #include <QFileInfo>
-#include <QVBoxLayout>
 #include <QRegularExpression>
 #include <QDir>
+#include <QGuiApplication>
+#include <QStyleHints>
+
+#ifdef QT_WIDGETS_LIB
+#include <QMenu>
+#include <QToolTip>
+#include <QStatusBar>
+#include <QStyle>
+#include <QVBoxLayout>
 #include <QApplication>
+#endif
 
 #include "qhtmlpart_p.h"
 //AFA #include "khtml_iface.h"
@@ -205,7 +210,12 @@ public:
 };
 }
 
-QHTMLPart::QHTMLPart(QWidget *parentWidget, QObject *parent)
+QHTMLPart::QHTMLPart(QWidget *parentWidget,
+#ifdef QT_WIDGETS_LIB
+                     QObject *parent)
+#else
+                     QQuickItem *parent)
+#endif
     : KParts::ReadOnlyPart(parent)
 {
     d = nullptr;
@@ -214,7 +224,12 @@ QHTMLPart::QHTMLPart(QWidget *parentWidget, QObject *parent)
     init(new QHTMLView(this, parentWidget));
 }
 
-QHTMLPart::QHTMLPart(KHTMLView *view, QObject *parent)
+QHTMLPart::QHTMLPart(KHTMLView *view,
+#ifdef QT_WIDGETS_LIB
+                     QObject *parent)
+#else
+                     QQuickItem *parent)
+#endif
     : KParts::ReadOnlyPart(parent)
 {
     d = nullptr;
@@ -240,6 +255,7 @@ void QHTMLPart::init(QHTMLView *view)
     d->m_view = view;
 
     if (!parentPart()) {
+#ifdef QT_WIDGETS_LIB
         QWidget *widget = new QWidget(view->parentWidget());
         widget->setObjectName("khtml_part_widget");
         QVBoxLayout *layout = new QVBoxLayout(widget);
@@ -255,6 +271,9 @@ void QHTMLPart::init(QHTMLView *view)
         //AFA layout->addWidget(d->m_bottomViewBar);
         setWidget(widget);
         widget->setFocusProxy(d->m_view);
+#else
+        //AFA-FIXME
+#endif
     } else {
         setWidget(view);
     }
@@ -1384,10 +1403,12 @@ void QHTMLPart::disableJSErrorExtension()
 
 void QHTMLPart::jsErrorDialogContextMenu()
 {
+#if ENABLE(KJS)
     QMenu *m = new QMenu(nullptr);
     m->addAction(i18n("&Hide Errors"), this, SLOT(removeJSErrorExtension()));
     m->addAction(i18n("&Disable Error Reporting"), this, SLOT(disableJSErrorExtension()));
     m->popup(QCursor::pos());
+#endif
 }
 
 void QHTMLPart::launchJSErrorDialog()
@@ -2168,9 +2189,11 @@ MimeType QHTMLPartPrivate::classifyMimeType(const QString &mimeStr)
 
 void QHTMLPart::begin(const QUrl &url, int xOffset, int yOffset)
 {
+#ifdef QT_WIDGETS_LIB
     if (d->m_view->underMouse()) {
         QToolTip::hideText();    // in case a previous tooltip is still shown
     }
+#endif
 
     // No need to show this for a new page until an error is triggered
     if (!parentPart()) {
@@ -3709,13 +3732,15 @@ void QHTMLPart::selectionLayoutChanged()
         d->editor_context.m_caretPaint = isCaretMode()
                                          || d->editor_context.m_selection.caretPos().node()->isContentEditable();
         if (d->editor_context.m_caretBlinks && d->editor_context.m_caretPaint) {
-            d->editor_context.m_caretBlinkTimer = startTimer(qApp->cursorFlashTime() / 2);
+            d->editor_context.m_caretBlinkTimer = startTimer(QGuiApplication::styleHints()->cursorFlashTime() / 2);
         }
         d->editor_context.m_selection.needsCaretRepaint();
         // make sure that caret is visible
         QRect r(d->editor_context.m_selection.getRepaintRect());
         if (d->editor_context.m_caretPaint) {
+#ifdef QT_WIDGETS_LIB
             d->m_view->ensureVisible(r.x(), r.y());
+#endif
         }
     }
 
@@ -4113,8 +4138,9 @@ bool QHTMLPart::urlSelected(const QString &url, int button, int state, const QSt
     if (!d->m_bComplete && !hasTarget) {
         closeUrl();
     }
-
+#ifdef QT_WIDGETS_LIB
     view()->viewport()->unsetCursor();
+#endif
     emit d->m_extension->openUrlRequest(cURL, args, browserArgs);
 
     return true;
@@ -4506,7 +4532,11 @@ void QHTMLPart::loadFrameElement(DOM::HTMLPartContainerElementImpl *frame, const
     if (!child->m_part) {
         QStringList dummy; // the list of servicetypes handled by the part is now unused.
         QString     khtml = QString::fromLatin1("khtml");
+#ifdef QT_WIDGETS_LIB
         KParts::ReadOnlyPart *part = createPart(d->m_view->viewport(), this,
+#else
+        KParts::ReadOnlyPart *part = createPart(d->m_view, this,
+#endif
                                                 QString::fromLatin1("text/html"),
                                                 khtml, dummy, QStringList());
         // We navigate it to about:blank to setup an empty one, but we do it
@@ -4966,10 +4996,12 @@ void QHTMLPart::connectToChildPart(khtml::ChildFrame *child, KParts::ReadOnlyPar
         connect(kidBrowserExt, SIGNAL(createNewWindow(QUrl,KParts::OpenUrlArguments,KParts::BrowserArguments,KParts::WindowArgs,KParts::ReadOnlyPart**)),
                 d->m_extension, SIGNAL(createNewWindow(QUrl,KParts::OpenUrlArguments,KParts::BrowserArguments,KParts::WindowArgs,KParts::ReadOnlyPart**)));
 
+#ifdef USE_WIDGETS_LIB
         connect(kidBrowserExt, SIGNAL(popupMenu(QPoint,KFileItemList,KParts::OpenUrlArguments,KParts::BrowserArguments,KParts::BrowserExtension::PopupFlags,KParts::BrowserExtension::ActionGroupMap)),
                 d->m_extension, SIGNAL(popupMenu(QPoint,KFileItemList,KParts::OpenUrlArguments,KParts::BrowserArguments,KParts::BrowserExtension::PopupFlags,KParts::BrowserExtension::ActionGroupMap)));
         connect(kidBrowserExt, SIGNAL(popupMenu(QPoint,QUrl,mode_t,KParts::OpenUrlArguments,KParts::BrowserArguments,KParts::BrowserExtension::PopupFlags,KParts::BrowserExtension::ActionGroupMap)),
                 d->m_extension, SIGNAL(popupMenu(QPoint,QUrl,mode_t,KParts::OpenUrlArguments,KParts::BrowserArguments,KParts::BrowserExtension::PopupFlags,KParts::BrowserExtension::ActionGroupMap)));
+#endif
 
         connect(kidBrowserExt, SIGNAL(infoMessage(QString)),
                 d->m_extension, SIGNAL(infoMessage(QString)));
@@ -5042,7 +5074,11 @@ KParts::ReadOnlyPart *QHTMLPart::createPart(QWidget *parentWidget,
 KParts::PartManager *QHTMLPart::partManager()
 {
     if (!d->m_manager && d->m_view) {
+#ifdef QT_WIDGETS_LIB
         d->m_manager = new KParts::PartManager(d->m_view->topLevelWidget(), this);
+#else
+        d->m_manager = new KParts::PartManager(d->m_view, this);
+#endif
         d->m_manager->setObjectName("khtml part manager");
         d->m_manager->setAllowNestedParts(true);
         connect(d->m_manager, SIGNAL(activePartChanged(KParts::Part*)),
@@ -6067,14 +6103,18 @@ void QHTMLPart::restoreState(QDataStream &stream)
 void QHTMLPart::show()
 {
     if (widget()) {
+#ifdef QT_WIDGETS_LIB
         widget()->show();
+#endif
     }
 }
 
 void QHTMLPart::hide()
 {
     if (widget()) {
+#ifdef QT_WIDGETS_LIB
         widget()->hide();
+#endif
     }
 }
 
@@ -6819,8 +6859,7 @@ bool QHTMLPart::handleMouseMoveEventDrag(khtml::MouseMoveEvent *event)
     if ((d->m_bMousePressed &&
             ((!d->m_strSelectedURL.isEmpty() && !isEditable())
              || (!d->m_mousePressNode.isNull() && d->m_mousePressNode.handle()->id() == ID_IMG)))
-            && (d->m_dragStartPos - QPoint(event->x(), event->y())).manhattanLength() > QApplication::startDragDistance()) {
-
+            && (d->m_dragStartPos - QPoint(event->x(), event->y())).manhattanLength() > QGuiApplication::styleHints()->startDragDistance()) {
         const DOM::DOMString url = event->url();
         DOM::NodeImpl *innerNodeImpl = event->innerNode().handle();
 
@@ -6843,8 +6882,11 @@ bool QHTMLPart::handleMouseMoveEventDrag(khtml::MouseMoveEvent *event)
         }
 
         u.setPassword(QString());
-
+#ifdef QT_WIDGETS_LIB
         QDrag *drag = new QDrag(d->m_view->viewport());
+#else
+        QDrag *drag = new QDrag(d->m_view);
+#endif
         QMap<QString, QString> metaDataMap;
         if (!d->m_referrer.isEmpty()) {
             metaDataMap.insert("referrer", d->m_referrer);
@@ -7295,11 +7337,13 @@ void QHTMLPart::slotActiveFrameChanged(KParts::Part *part)
     }
 //    qCDebug(KHTML_LOG) << "d->m_activeFrame=" << d->m_activeFrame;
     if (d->m_activeFrame && d->m_activeFrame->widget() && d->m_activeFrame->widget()->inherits("QFrame")) {
+#ifdef QT_WIDGETS_LIB
         QFrame *frame = static_cast<QFrame *>(d->m_activeFrame->widget());
         if (frame->frameStyle() != QFrame::NoFrame) {
             frame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
             frame->repaint();
         }
+#endif
     }
 
     if (d->m_activeFrame && !d->m_activeFrame->inherits("KHTMLPart")) {
@@ -7320,11 +7364,13 @@ void QHTMLPart::slotActiveFrameChanged(KParts::Part *part)
     d->m_activeFrame = part;
 
     if (d->m_activeFrame && d->m_activeFrame->widget()->inherits("QFrame")) {
+#ifdef QT_WIDGETS_LIB
         QFrame *frame = static_cast<QFrame *>(d->m_activeFrame->widget());
         if (frame->frameStyle() != QFrame::NoFrame) {
             frame->setFrameStyle(QFrame::StyledPanel | QFrame::Plain);
             frame->repaint();
         }
+#endif
         // qCDebug(KHTML_LOG) << "new active frame " << d->m_activeFrame;
     }
 
@@ -7345,8 +7391,10 @@ void QHTMLPart::setActiveNode(const DOM::Node &node)
 
     // Scroll the view if necessary to ensure that the new focus node is visible
     QRect rect  = node.handle()->getRect();
+#ifdef QT_WIDGETS_LIB
     d->m_view->ensureVisible(rect.right(), rect.bottom());
     d->m_view->ensureVisible(rect.left(), rect.top());
+#endif
 }
 
 DOM::Node QHTMLPart::activeNode() const

@@ -31,14 +31,19 @@
 #include "render_arena.h"
 
 #include <assert.h>
-#include <QWidget>
 #include <QPainter>
 #include <QActionEvent>
+#ifdef QT_WIDGETS_LIB
+#include <QWidget>
 #include <QApplication>
 #include <QLineEdit>
 #include <QComboBox>
 #include <QCheckBox>
 #include <QRadioButton>
+#else
+#include <QGuiApplication>
+#include <QWheelEvent>
+#endif
 //AFA #include <kurlrequester.h>
 #include <QtCore/QObject>
 #include <QVector>
@@ -223,7 +228,9 @@ void RenderWidget::detach()
             k->m_kwp->setRenderWidget(nullptr);
         }
         m_widget->removeEventFilter(this);
+#ifdef QT_WIDGETS_LIB
         m_widget->setMouseTracking(false);
+#endif
     }
 
     // make sure our DOM-node don't think we exist
@@ -240,10 +247,12 @@ RenderWidget::~RenderWidget()
     KHTMLAssert(refCount() <= 0);
 
     if (m_widget) {
+#ifdef QT_WIDGETS_LIB
         if (m_widget->hasFocus()) {
             m_widget->clearFocus();
         }
         m_widget->hide();
+#endif
         if (m_ownsWidget) {
             m_widget->deleteLater();
         }
@@ -268,7 +277,7 @@ void  RenderWidget::resizeWidget(int w, int h)
     // it is bigger )
     h = qMin(h, 3072);
     w = qMin(w, 2000);
-
+#ifdef QT_WIDGETS_LIB
     if (m_widget->width() != w || m_widget->height() != h) {
         m_widget->resize(w, h);
         if (isRedirectedWidget() && qobject_cast<KHTMLView *>(m_widget) && !m_widget->isVisible()) {
@@ -283,6 +292,7 @@ void  RenderWidget::resizeWidget(int w, int h)
             static_cast<KHTMLView *>(m_widget)->resizeEvent(&e);
         }
     }
+#endif
 }
 
 bool RenderWidget::event(QEvent *e)
@@ -306,7 +316,9 @@ void RenderWidget::setQWidget(QWidget *widget)
         if (m_widget) {
             m_widget->removeEventFilter(this);
             disconnect(m_widget, SIGNAL(destroyed()), this, SLOT(slotWidgetDestructed()));
+#ifdef QT_WIDGETS_LIB
             m_widget->hide();
+#endif
             if (m_ownsWidget) {
                 m_widget->deleteLater();    //Might happen due to event on the widget, so be careful
             }
@@ -324,20 +336,26 @@ void RenderWidget::setQWidget(QWidget *widget)
                     isRedirectedSubFrame = true;
                 }
             }
+#ifdef QT_WIDGETS_LIB
             m_widget->setParent(m_view->widget());
+#endif
             if (isRedirectedSubFrame) {
                 static_cast<KHTMLView *>(m_widget)->setHasStaticBackground();
             }
             connect(m_widget, SIGNAL(destroyed()), this, SLOT(slotWidgetDestructed()));
             m_widget->installEventFilter(this);
             if (isRedirectedWidget()) {
+#ifdef QT_WIDGETS_LIB
                 if (!qobject_cast<QFrame *>(m_widget)) {
                     m_widget->setAttribute(Qt::WA_NoSystemBackground);
                 }
+#endif
             }
+#ifdef QT_WIDGETS_LIB
             if (m_widget->focusPolicy() > Qt::StrongFocus) {
                 m_widget->setFocusPolicy(Qt::StrongFocus);
             }
+#endif
             // if we've already received a layout, apply the calculated space to the
             // widget immediately, but we have to have really been full constructed (with a non-null
             // style pointer).
@@ -350,8 +368,10 @@ void RenderWidget::setQWidget(QWidget *widget)
         }
         m_view->setWidgetVisible(this, false);
         if (m_widget) {
+#ifdef QT_WIDGETS_LIB
             m_widget->move(0, -500000);
             m_widget->hide();
+#endif
         }
     }
 }
@@ -405,7 +425,11 @@ void RenderWidget::updateFromElement()
         bool trans = (isRedirectedWidget() && /*AFA !qobject_cast<KUrlRequester *>(m_widget) &&*/
                       (hasBackgroundImage || (style()->hasBackground() && shouldPaintCSSBorders())));
 
+#ifdef QT_WIDGETS_LIB
         QPalette pal(QApplication::palette(m_widget));
+#else
+        QPalette pal(QGuiApplication::palette());
+#endif
         // We need a non-transparent version for widgets with popups (e.g. kcombobox). The popups must not let
         // the background show through.
         QPalette non_trans_pal = pal;
@@ -417,12 +441,16 @@ void RenderWidget::updateFromElement()
             bool shouldChangeBgPal = true;
 
             if (!backgroundColor.isValid()) {
+#ifdef QT_WIDGETS_LIB
                 backgroundColor = pal.color(widget()->backgroundRole());
+#endif
             } else
                 shouldChangeBgPal = !((backgroundColor == colorForCSSValue(CSS_VAL_WINDOW)) ||
                                       (backgroundColor == colorForCSSValue(CSS_VAL_BUTTONFACE)));
             if (shouldChangeBgPal || trans) {
+#ifdef QT_WIDGETS_LIB
                 pal.setColor(widget()->backgroundRole(), trans ? QColor(0, 0, 0, 0) : backgroundColor);
+#endif
                 for (int i = 0; i < QPalette::NColorGroups; ++i) {
                     if (shouldChangeBgPal) {
                         pal.setColor((QPalette::ColorGroup)i, QPalette::Window, backgroundColor);
@@ -482,7 +510,7 @@ void RenderWidget::updateFromElement()
                 non_trans_pal.setColor(QPalette::Disabled, QPalette::ButtonText, disfg);
             }
         }
-
+#ifdef QT_WIDGETS_LIB
         if ((qobject_cast<QCheckBox *>(m_widget) || qobject_cast<QRadioButton *>(m_widget)) &&
                 (backgroundColor == Qt::transparent && !hasBackgroundImage)) {
             m_widget->setPalette(non_trans_pal);
@@ -529,6 +557,7 @@ void RenderWidget::updateFromElement()
         } else if (QLineEdit *lineEdit = qobject_cast<QLineEdit *>(m_widget)) {
             lineEdit->setFrame(!shouldDisableNativeBorders());
         }
+#endif
     }
 
     RenderReplaced::updateFromElement();
@@ -538,13 +567,13 @@ void RenderWidget::paintBoxDecorations(PaintInfo &paintInfo, int _tx, int _ty)
 {
     QRect r = QRect(_tx, _ty, width(), height());
     QRect cr = r.intersected(paintInfo.r);
-
+#ifdef QT_WIDGETS_LIB
     if (qobject_cast<QAbstractScrollArea *>(m_widget) || (isRedirectedWidget() &&
             (style()->hasBackgroundImage() || (style()->hasBackground() && shouldPaintCSSBorders())))) {
         paintAllBackgrounds(paintInfo.p, style()->backgroundColor(), style()->backgroundLayers(),
                             cr, r.x(), r.y(), r.width(), r.height());
     }
-
+#endif
     if (shouldPaintCSSBorders() && style()->hasBorder()) {
         paintBorder(paintInfo.p, _tx, _ty, width(), height(), style());
     }
@@ -562,12 +591,16 @@ void RenderWidget::setStyle(RenderStyle *_style)
 {
     RenderReplaced::setStyle(_style);
     if (m_widget) {
+#ifdef QT_WIDGETS_LIB
         m_widget->setFont(style()->font());
+#endif
         if (style()->visibility() != VISIBLE) {
             if (m_view) {
                 m_view->setWidgetVisible(this, false);
             }
+#ifdef QT_WIDGETS_LIB
             m_widget->hide();
+#endif
         }
     }
 }
@@ -606,15 +639,25 @@ void RenderWidget::paint(PaintInfo &paintInfo, int _tx, int _ty)
     int yPos = _ty + borderTop() + paddingTop();
 
     bool khtmlw = isRedirectedWidget();
+#ifdef QT_WIDGETS_LIB
     int childw = m_widget->width();
     int childh = m_widget->height();
+#else
+    int childw = m_widget->property("width").toInt();
+    int childh = m_widget->property("height").toInt();
+#endif
     if ((childw == 2000 || childh == 3072) && m_widget->inherits("KHTMLView")) {
         KHTMLView *vw = static_cast<KHTMLView *>(m_widget);
         int cy = m_view->contentsY();
         int ch = m_view->visibleHeight();
 
+#ifdef QT_WIDGETS_LIB
         int childx = m_widget->pos().x();
         int childy = m_widget->pos().y();
+#else
+        int childx = m_widget->property("x").toInt();
+        int childy = m_widget->property("y").toInt();
+#endif
 
         int xNew = xPos;
         int yNew = childy;
@@ -645,8 +688,13 @@ void RenderWidget::paint(PaintInfo &paintInfo, int _tx, int _ty)
     } else {
         m_view->addChild(m_widget, xPos, -500000 + yPos);
     }
+#ifdef QT_WIDGETS_LIB
     m_widget->show();
+#else
+    m_widget->setProperty("visible", true);
+#endif
     if (khtmlw) {
+#ifdef QT_WIDGETS_LIB
         if (KHTMLView *v = qobject_cast<KHTMLView *>(m_widget)) {
             // our buffers are dedicated to scrollbars.
             if (v->verticalScrollBar()->isVisible() && (!m_buffer[0] || v->verticalScrollBar()->size() != m_buffer[0]->size())) {
@@ -663,11 +711,13 @@ void RenderWidget::paint(PaintInfo &paintInfo, int _tx, int _ty)
             m_buffer[0] = new QPixmap(m_widget->size());
         }
         paintWidget(paintInfo, m_widget, xPos, yPos, m_buffer);
+#endif
     }
 }
 
 static void setInPaintEventFlag(QWidget *w, bool b = true, bool recurse = true)
 {
+#ifdef QT_WIDGETS_LIB
     w->setAttribute(Qt::WA_WState_InPaintEvent, b);
 
     if (!recurse) {
@@ -687,6 +737,7 @@ static void setInPaintEventFlag(QWidget *w, bool b = true, bool recurse = true)
             setInPaintEventFlag(cw, b);
         }
     }
+#endif
 }
 
 static void copyWidget(const QRect &r, QPainter *p, QWidget *widget, int tx, int ty, bool buffered = false, QPixmap *buffer = nullptr)
@@ -717,9 +768,11 @@ static void copyWidget(const QRect &r, QPainter *p, QWidget *widget, int tx, int
     QPainter::RenderHints rh = p->renderHints();
 #endif
     if (buffered) {
+#ifdef QT_WIDGETS_LIB
         if (!widget->size().isValid()) {
             return;
         }
+#endif
         // TT says Qt 4's widget painting hits an NVidia RenderAccel bug/shortcoming
         // resulting in pixmap buffers being unsuitable for reuse by more than one widget.
         //
@@ -740,9 +793,9 @@ static void copyWidget(const QRect &r, QPainter *p, QWidget *widget, int tx, int
     }
 
     setInPaintEventFlag(widget, false);
-
+#ifdef QT_WIDGETS_LIB
     widget->render(d, (buffered ? QPoint(0, 0) : thePoint) + r.topLeft(), r);
-
+#endif
     setInPaintEventFlag(widget);
 
     if (!buffered) {
@@ -784,6 +837,7 @@ void RenderWidget::paintWidget(PaintInfo &pI, QWidget *widget, int tx, int ty, Q
 #else
         true;
 #endif
+#ifdef QT_WIDGETS_LIB
     QRect rr = pI.r;
     rr.translate(-tx, -ty);
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
@@ -822,6 +876,7 @@ void RenderWidget::paintWidget(PaintInfo &pI, QWidget *widget, int tx, int ty, Q
         copyWidget(r, p, widget, tx, ty, buffered, buffer[0]);
     }
     allowWidgetPaintEvents = false;
+#endif
 }
 
 bool RenderWidget::eventFilter(QObject * /*o*/, QEvent *e)
@@ -871,13 +926,18 @@ bool RenderWidget::eventFilter(QObject * /*o*/, QEvent *e)
 
         //qCDebug(KHTML_LOG) << "RenderWidget::eventFilter captures FocusIn";
         document()->setFocusNode(element());
+        //AFA
 //         if ( isEditable() ) {
 //             KHTMLPartBrowserExtension *ext = static_cast<KHTMLPartBrowserExtension *>( element()->view->part()->browserExtension() );
 //             if ( ext )  ext->editableWidgetFocused( m_widget );
 //         }
         break;
     case QEvent::Wheel: {
+#ifdef QT_WIDGETS_LIB
         if (widget()->parentWidget() == view()->widget()) {
+#else
+        if (false /*AFA widget()->parent() == view()->widget()*/) {
+#endif
             bool vertical = (static_cast<QWheelEvent *>(e)->orientation() == Qt::Vertical);
             // don't allow the widget to react to wheel event if
             // the view is being scrolled by mouse wheel
@@ -919,6 +979,7 @@ bool RenderWidget::eventFilter(QObject * /*o*/, QEvent *e)
 void RenderWidget::EventPropagator::sendEvent(QEvent *e)
 {
     // ### why don't we just call event()? That would be the normal route.
+#ifdef QT_WIDGETS_LIB
     switch (e->type()) {
     case QEvent::Wheel:
         wheelEvent(static_cast<QWheelEvent *>(e));
@@ -957,6 +1018,7 @@ void RenderWidget::EventPropagator::sendEvent(QEvent *e)
     default:
         break;
     }
+#endif
 }
 
 // send event to target and let it bubble up until it is accepted or
@@ -972,7 +1034,11 @@ static bool bubblingSend(QWidget *target, QEvent *e, QWidget *stoppingParent)
             return false;
         }
         // ### might want to shift Q*Event::pos() as we go up
+#ifdef QT_WIDGETS_LIB
         target = target->parentWidget();
+#else
+        target = target->parentItem();
+#endif
         assert(target != nullptr);
     }
 }
@@ -987,8 +1053,10 @@ bool RenderWidget::handleEvent(const DOM::EventImpl &ev)
         QFocusEvent e(ev.id() == EventImpl::DOMFOCUSIN_EVENT ? QEvent::FocusIn : QEvent::FocusOut);
         // E.g. a KLineEdit child widget might be defined to receive
         // focus instead
+#ifdef QT_WIDGETS_LIB
         QWidget *fw = m_widget->focusProxy() ? m_widget->focusProxy() : m_widget;
         static_cast<EventPropagator *>(fw)->sendEvent(&e);
+#endif
         ret = e.isAccepted();
         break;
     }
@@ -1082,35 +1150,42 @@ bool RenderWidget::handleEvent(const DOM::EventImpl &ev)
             // appropriate coordinates. Might be Enter/Leave issue. ### FIXME
             // In the meantime, clamping the event to the widget rect
             // will at least prevent the selection to be lost.
+#ifdef QT_WIDGETS_LIB
             p.setX(qMin(qMax(0, p.x()), m_widget->width()));
             p.setY(qMin(qMax(0, p.y()), m_widget->height()));
+#endif
         }
 
         QPointer<QWidget> target;
+#ifdef QT_WIDGETS_LIB
         target = m_widget->childAt(p);
 
         if (target) {
             p = target->mapFrom(m_widget, p);
         }
-
+#endif
         if (m_underMouse != target && ev.id() != EventImpl::KHTML_MOUSEWHEEL_EVENT) {
             if (m_underMouse) {
                 QEvent moe(QEvent::Leave);
                 QCoreApplication::sendEvent(m_underMouse, &moe);
 //                qCDebug(KHTML_LOG) << "sending LEAVE to"<< m_underMouse;
+#ifdef QT_WIDGETS_LIB
                 if (m_underMouse->testAttribute(Qt::WA_Hover)) {
                     QHoverEvent he(QEvent::HoverLeave, QPoint(-1, -1), QPoint(0, 0));
                     QCoreApplication::sendEvent(m_underMouse, &he);
                 }
+#endif
             }
             if (target) {
                 QEvent moe(QEvent::Enter);
                 QCoreApplication::sendEvent(target, &moe);
 //                qCDebug(KHTML_LOG) << "sending ENTER to" << target;
+#ifdef QT_WIDGETS_LIB
                 if (target->testAttribute(Qt::WA_Hover)) {
                     QHoverEvent he(QEvent::HoverEnter, QPoint(0, 0), QPoint(-1, -1));
                     QCoreApplication::sendEvent(target, &he);
                 }
+#endif
             }
             m_underMouse = target;
         }
@@ -1124,18 +1199,24 @@ bool RenderWidget::handleEvent(const DOM::EventImpl &ev)
         }
 #endif
         if (ev.id() == EventImpl::MOUSEDOWN_EVENT) {
+#ifdef QT_WIDGETS_LIB
             if (!target || (!::qobject_cast<QScrollBar *>(target) &&
                             //AFA !::qobject_cast<KUrlRequester *>(m_widget) &&
                             !::qobject_cast<QLineEdit *>(m_widget))) {
                 target = m_widget;
             }
+#endif
             view()->setMouseEventsTarget(target);
         } else {
             target = view()->mouseEventsTarget();
             if (target) {
                 QWidget *parent = target;
                 while (parent && parent != m_widget) {
+#ifdef QT_WIDGETS_LIB
                     parent = parent->parentWidget();
+#else
+                    parent = parent->parentItem();
+#endif
                 }
                 if (!parent) {
                     return false;
@@ -1153,6 +1234,7 @@ bool RenderWidget::handleEvent(const DOM::EventImpl &ev)
             // a) the view is being scrolled by mouse wheel
             // b) it's an unfocused ComboBox (for extra security against unwanted changes to formulars)
             // This does not apply if the webpage has no valid scroll range in the given wheel event orientation.
+#ifdef QT_WIDGETS_LIB
             if (((orient == Qt::Vertical && (view()->contentsHeight() > view()->visibleHeight()))  ||
                     (orient == Qt::Horizontal && (view()->contentsWidth() > view()->visibleWidth()))) &&
                     (view()->isScrollingFromMouseWheel() ||
@@ -1161,6 +1243,7 @@ bool RenderWidget::handleEvent(const DOM::EventImpl &ev)
                 ret = false;
                 break;
             }
+#endif
         }
 
         QScopedPointer<QEvent> e(isMouseWheel ?
@@ -1175,10 +1258,13 @@ bool RenderWidget::handleEvent(const DOM::EventImpl &ev)
         if (needContextMenuEvent) {
             QContextMenuEvent cme(QContextMenuEvent::Mouse, p);
             static_cast<EventPropagator *>(target.data())->sendEvent(&cme);
-        } else if (type == QEvent::MouseMove && target->testAttribute(Qt::WA_Hover)) {
+        }
+#ifdef QT_WIDGETS_LIB
+        else if (type == QEvent::MouseMove && target->testAttribute(Qt::WA_Hover)) {
             QHoverEvent he(QEvent::HoverMove, p, p);
             QCoreApplication::sendEvent(target, &he);
         }
+#endif
         if (ev.id() == EventImpl::MOUSEUP_EVENT) {
             view()->setMouseEventsTarget(nullptr);
         }
@@ -1231,8 +1317,10 @@ bool RenderWidget::handleEvent(const DOM::EventImpl &ev)
                                 ke->text(), ke->isAutoRepeat(), ke->count());
             static_cast<EventPropagator *>(m_widget)->sendEvent(&releaseEv);
         }
+#ifdef QT_WIDGETS_LIB
         QWidget *fw = m_widget->focusWidget() ? m_widget->focusWidget() : m_widget;
         static_cast<EventPropagator *>(fw)->sendEvent(ke);
+#endif
         ret = ke->isAccepted();
         break;
     }
@@ -1241,10 +1329,12 @@ bool RenderWidget::handleEvent(const DOM::EventImpl &ev)
         QEvent moe(QEvent::Leave);
         QCoreApplication::sendEvent(target, &moe);
 //        qCDebug(KHTML_LOG) << "received MOUSEOUT, forwarding to" << target ;
+#ifdef QT_WIDGETS_LIB
         if (target->testAttribute(Qt::WA_Hover)) {
             QHoverEvent he(QEvent::HoverLeave, QPoint(-1, -1), QPoint(0, 0));
             QCoreApplication::sendEvent(target, &he);
         }
+#endif
         m_underMouse = nullptr;
         break;
     }
@@ -1252,10 +1342,12 @@ bool RenderWidget::handleEvent(const DOM::EventImpl &ev)
         QEvent moe(QEvent::Enter);
         QCoreApplication::sendEvent(m_widget, &moe);
 //        qCDebug(KHTML_LOG) << "received MOUSEOVER, forwarding to" << m_widget;
+#ifdef QT_WIDGETS_LIB
         if (m_widget->testAttribute(Qt::WA_Hover)) {
             QHoverEvent he(QEvent::HoverEnter, QPoint(0, 0), QPoint(-1, -1));
             QCoreApplication::sendEvent(m_widget, &he);
         }
+#endif
         view()->part()->resetHoverText();
         break;
     }
@@ -1287,12 +1379,14 @@ void RenderWidget::deref()
 void RenderWidget::dump(QTextStream &stream, const QString &ind) const
 {
     RenderReplaced::dump(stream, ind);
+#ifdef QT_WIDGETS_LIB
     if (widget())
         stream << " color=" << widget()->palette().color(widget()->foregroundRole()).name()
                << " bg=" << widget()->palette().color(widget()->backgroundRole()).name();
     else {
         stream << " null widget";
     }
+#endif
 }
 #endif
 
@@ -1338,7 +1432,9 @@ void KHTMLWidgetPrivate::setIsRedirected(bool b)
     m_redirected = b;
     if (!b && m_rw && m_rw->widget()) {
         setInPaintEventFlag(m_rw->widget(), false);
+#ifdef QT_WIDGETS_LIB
         m_rw->widget()->setAttribute(Qt::WA_OpaquePaintEvent, false);
+#endif
         m_rw->widget()->removeEventFilter(m_rw->view());
     }
 }

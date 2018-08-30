@@ -72,7 +72,11 @@ public:
      * Constructor
      * See also Part for the setXXX methods to call.
      */
+#ifdef QT_WIDGETS_LIB
     explicit ReadOnlyPart(QObject *parent = nullptr);
+#else
+    explicit ReadOnlyPart(QQuickItem *parent = nullptr);
+#endif
 
     /**
      * Destructor
@@ -301,7 +305,11 @@ protected:
     void setLocalFilePath(const QString &localFilePath);
 
 protected:
+#ifdef QT_WIDGETS_LIB
     ReadOnlyPart(ReadOnlyPartPrivate &dd, QObject *parent);
+#else
+    ReadOnlyPart(ReadOnlyPartPrivate &dd, QQuickItem *parent);
+#endif
 
 private:
     Q_PRIVATE_SLOT(d_func(), void _k_slotJobFinished(KJob *job))

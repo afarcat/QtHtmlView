@@ -41,7 +41,9 @@
 #include "xml/dom_docimpl.h"
 
 #include <QCoreApplication>
+#ifdef QT_WIDGETS_LIB
 #include <QStyle>
+#endif
 
 #include "khtml_debug.h"
 #include <assert.h>

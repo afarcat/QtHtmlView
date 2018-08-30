@@ -22,7 +22,12 @@
 
 #include <kparts/kparts_export.h>
 
+#ifdef QT_WIDGETS_LIB
 #include <QWidget>
+#else
+#include <QQuickItem>
+#define QWidget QQuickItem
+#endif
 
 namespace KParts
 {

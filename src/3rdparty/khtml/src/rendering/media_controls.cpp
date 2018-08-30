@@ -26,7 +26,9 @@
  */
 
 #include "media_controls.h"
+#ifdef QT_WIDGETS_LIB
 #include <QHBoxLayout>
+#endif
 //AFA #include <phonon/seekslider.h>
 //AFA #include <phonon/mediaobject.h>
 #include <rendering/render_media.h>
@@ -41,6 +43,7 @@ namespace khtml
 MediaControls::MediaControls(MediaPlayer *mediaPlayer, QWidget *parent) : QWidget(parent)
 {
     m_mediaPlayer = mediaPlayer;
+#ifdef QT_WIDGETS_LIB
     //AFA Phonon::MediaObject *mediaObject = m_mediaPlayer->mediaObject();
     setLayout(new QHBoxLayout(this));
     m_play = new QPushButton(QIcon::fromTheme("media-playback-start"), i18n("Play"), this);
@@ -57,6 +60,11 @@ MediaControls::MediaControls(MediaPlayer *mediaPlayer, QWidget *parent) : QWidge
     m_fullscreen->setCheckable(true);
     //AFA connect(fsac, SIGNAL(toggled(bool)), this, SLOT(slotToggled(bool)));
     layout()->addWidget(m_fullscreen);
+#else
+    m_play = nullptr;
+    m_pause = nullptr;
+    m_fullscreen = nullptr;
+#endif
 
     //AFA slotStateChanged(mediaObject->state());
     //AFA connect(mediaObject, SIGNAL(stateChanged(Phonon::State,Phonon::State)), SLOT(slotStateChanged(Phonon::State)));

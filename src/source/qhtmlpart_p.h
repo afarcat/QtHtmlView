@@ -33,7 +33,9 @@
 #include <kparts/browserextension.h>
 #include <kparts/openurlarguments.h>
 
+#ifdef QT_WIDGETS_LIB
 #include <QAction>
+#endif
 #include <QtCore/QDate>
 #include <QtCore/QPointer>
 #include <QtCore/QMap>

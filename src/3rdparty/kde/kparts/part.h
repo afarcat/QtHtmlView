@@ -23,14 +23,18 @@
 
 #include <kparts/kparts_export.h>
 
-#include <QObject>
+#ifdef QT_WIDGETS_LIB
+#include <QWidget>
+#else
+#include <QQuickItem>
+#define QWidget QQuickItem
+#endif
 
 #define KPARTS_DECLARE_PRIVATE(Class) \
     inline Class##Private* d_func() { return reinterpret_cast<Class##Private *>(Part::d_ptr); } \
     inline const Class##Private* d_func() const { return reinterpret_cast<const Class##Private *>(Part::d_ptr); } \
     friend class Class##Private;
 
-class QWidget;
 class QEvent;
 class QPoint;
 
@@ -70,7 +74,11 @@ class GUIActivateEvent;
  * framework for a "viewer" part and for an "editor"-like part.
  * Use Part directly only if your part doesn't fit into those.
  */
+#ifdef QT_WIDGETS_LIB
 class KPARTS_EXPORT Part : public QObject
+#else
+class KPARTS_EXPORT Part : public QQuickItem
+#endif
 {
     Q_OBJECT
 
@@ -83,7 +91,11 @@ public:
      *
      *  @param parent Parent object of the part.
      */
+#ifdef QT_WIDGETS_LIB
     explicit Part(QObject *parent = nullptr);
+#else
+    explicit Part(QQuickItem *parent = nullptr);
+#endif
 
     /**
      *  Destructor.
@@ -217,7 +229,11 @@ protected Q_SLOTS:
     void slotWidgetDestroyed();
 
 protected:
+#ifdef QT_WIDGETS_LIB
     Part(PartPrivate &dd, QObject *parent);
+#else
+    Part(PartPrivate &dd, QQuickItem *parent);
+#endif
 
     PartPrivate *d_ptr;
 

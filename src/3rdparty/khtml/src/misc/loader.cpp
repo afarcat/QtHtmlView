@@ -58,11 +58,13 @@
 //#include <qasyncio.h>
 //#include <qasyncimageio.h>
 #include <QGuiApplication>
+#ifdef QT_WIDGETS_LIB
 #include <QDesktopWidget>
+#include <QWidget>
+#endif
 #include <QPainter>
 #include <QBitmap>
 #include <QMovie>
-#include <QWidget>
 #include <QtCore/QDebug>
 //AFA #include <kurlauthorized.h>
 #include <kio/job.h>

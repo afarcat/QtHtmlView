@@ -28,14 +28,26 @@
 
 using namespace KParts;
 
-Part::Part(QObject *parent)
+Part::Part
+#ifdef QT_WIDGETS_LIB
+    (QObject *parent)
     : QObject(parent), d_ptr(new PartPrivate(this))
+#else
+    (QQuickItem *parent)
+    : QQuickItem(parent), d_ptr(new PartPrivate(this))
+#endif
 {
     d_ptr->m_obj = this;
 }
 
-Part::Part(PartPrivate &dd, QObject *parent)
+Part::Part
+#ifdef QT_WIDGETS_LIB
+    (PartPrivate &dd, QObject *parent)
     : QObject(parent), d_ptr(&dd)
+#else
+    (PartPrivate &dd, QQuickItem *parent)
+    : QQuickItem(parent), d_ptr(&dd)
+#endif
 {
     d_ptr->m_obj = this;
 }
@@ -65,9 +77,11 @@ Part::~Part()
 void Part::embed(QWidget *parentWidget)
 {
     if (widget()) {
+#ifdef QT_WIDGETS_LIB
         widget()->setParent(parentWidget, Qt::WindowFlags());
         widget()->setGeometry(0, 0, widget()->width(), widget()->height());
         widget()->show();
+#endif
     }
 }
 

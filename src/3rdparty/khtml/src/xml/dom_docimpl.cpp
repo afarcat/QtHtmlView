@@ -407,7 +407,9 @@ DocumentImpl::DocumentImpl(KHTMLView *v)
 
     if (v) {
         m_docLoader = new DocLoader(v->part(), this);
+#ifdef QT_WIDGETS_LIB
         setPaintDevice(m_view);
+#endif
     } else {
         m_docLoader = new DocLoader(nullptr, this);
     }
@@ -1561,7 +1563,9 @@ void DocumentImpl::attach()
     assert(!attached());
 
     if (m_view) {
+#ifdef QT_WIDGETS_LIB
         setPaintDevice(m_view);
+#endif
     }
 
     if (!m_renderArena) {
@@ -2584,7 +2588,9 @@ void DocumentImpl::quietResetFocus()
 
     //We're blurring. Better clear the Qt focus/give it to the view...
     if (view()) {
+#ifdef QT_WIDGETS_LIB
         view()->setFocus();
+#endif
     }
 }
 
@@ -2662,6 +2668,7 @@ void DocumentImpl::setFocusNode(NodeImpl *newFocusNode)
             // eww, I suck. set the qt focus correctly
             // ### find a better place in the code for this
             if (view()) {
+#ifdef QT_WIDGETS_LIB
                 if (!m_focusNode->renderer() || !m_focusNode->renderer()->isWidget()) {
                     view()->setFocus();
                 } else if (static_cast<RenderWidget *>(m_focusNode->renderer())->widget()) {
@@ -2669,11 +2676,14 @@ void DocumentImpl::setFocusNode(NodeImpl *newFocusNode)
                         static_cast<RenderWidget *>(m_focusNode->renderer())->widget()->setFocus();
                     }
                 }
+#endif
             }
         } else {
             //We're blurring. Better clear the Qt focus/give it to the view...
             if (view()) {
+#ifdef QT_WIDGETS_LIB
                 view()->setFocus();
+#endif
             }
         }
 

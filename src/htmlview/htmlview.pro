@@ -5,9 +5,9 @@
 TARGET = QtHtmlView
 TEMPLATE = lib
 
-QT       += core gui svg xml multimedia network
+QT += core gui xml multimedia network
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-DESTDIR = ../bin
+DESTDIR = ../../bin
 
-include (src.pri)
+include (../src.pri)

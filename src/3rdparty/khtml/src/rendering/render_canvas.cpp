@@ -30,7 +30,9 @@
 #include "khtmlview.h"
 #include "khtml_part.h"
 #include "khtml_debug.h"
+#ifdef QT_WIDGETS_LIB
 #include <QScrollBar>
+#endif
 
 using namespace khtml;
 
@@ -242,7 +244,7 @@ void RenderCanvas::updateDocumentSize()
 
         // we need to adjust the document's size to make sure we don't enter
         // an endless cycle of scrollbars being added, then removed at the next layout.
-
+#ifdef QT_WIDGETS_LIB
         bool vss = m_view->verticalScrollBar()->isVisible();
         bool hss = m_view->horizontalScrollBar()->isVisible();
 
@@ -257,6 +259,22 @@ void RenderCanvas::updateDocumentSize()
         // of course, if the scrollbar policy isn't auto, there's no point adjusting any value..
         int overrideH = m_view->verticalScrollBarPolicy() == Qt::ScrollBarAsNeeded ? 0 : hDocH;
         int overrideW = m_view->verticalScrollBarPolicy() == Qt::ScrollBarAsNeeded ? 0 : hDocW;
+#else
+        bool vss = false;//AFA m_view->verticalScrollBar()->isVisible();
+        bool hss = false;//AFA m_view->horizontalScrollBar()->isVisible();
+
+        // calculate the extent of scrollbars
+        int vsPixSize = 0;//AFA m_view->verticalScrollBar()->sizeHint().width();
+        int hsPixSize = 0;//AFA m_view->horizontalScrollBar()->sizeHint().height();
+
+        // this variable holds the size the viewport will have after the inner content is resized to
+        // the new document dimensions
+        QSize viewport = QSize(m_view->property("width").toInt(), m_view->property("height").toInt());//AFA m_view->maximumViewportSize();
+
+        // of course, if the scrollbar policy isn't auto, there's no point adjusting any value..
+        int overrideH = 0;//AFA m_view->verticalScrollBarPolicy() == Qt::ScrollBarAsNeeded ? 0 : hDocH;
+        int overrideW = 0;//AFA m_view->verticalScrollBarPolicy() == Qt::ScrollBarAsNeeded ? 0 : hDocW;
+#endif
 
         if (!overrideW && hDocW > viewport.width()) {
             viewport.setHeight(viewport.height() - hsPixSize);
@@ -421,8 +439,11 @@ void RenderCanvas::paintBoxDecorations(PaintInfo &paintInfo, int /*_tx*/, int /*
     if ((firstChild() && firstChild()->style()->visibility() == VISIBLE) || !view()) {
         return;
     }
-
+#ifdef QT_WIDGETS_LIB
     paintInfo.p->fillRect(paintInfo.r, view()->palette().color(QPalette::Active, QPalette::Base));
+#else
+    paintInfo.p->fillRect(paintInfo.r, qApp->palette().color(QPalette::Active, QPalette::Base));
+#endif
 }
 
 void RenderCanvas::repaintRectangle(int x, int y, int w, int h, Priority p, bool f)

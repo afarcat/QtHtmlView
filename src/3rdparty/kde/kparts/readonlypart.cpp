@@ -36,12 +36,22 @@
 
 using namespace KParts;
 
-ReadOnlyPart::ReadOnlyPart(QObject *parent)
+ReadOnlyPart::ReadOnlyPart
+#ifdef QT_WIDGETS_LIB
+    (QObject *parent)
+#else
+    (QQuickItem *parent)
+#endif
     : Part(*new ReadOnlyPartPrivate(this), parent)
 {
 }
 
-ReadOnlyPart::ReadOnlyPart(ReadOnlyPartPrivate &dd, QObject *parent)
+ReadOnlyPart::ReadOnlyPart(ReadOnlyPartPrivate &dd,
+#ifdef QT_WIDGETS_LIB
+    QObject *parent)
+#else
+    QQuickItem *parent)
+#endif
     : Part(dd, parent)
 {
 }

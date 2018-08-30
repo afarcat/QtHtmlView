@@ -175,11 +175,14 @@ int BrowserExtension::yOffset()
 void BrowserExtension::saveState(QDataStream &stream)
 {
     // TODO add d->m_part->mimeType()
+#if ENABLE_STATE
     stream << d->m_part->url() << static_cast<qint32>(xOffset()) << static_cast<qint32>(yOffset());
+#endif
 }
 
 void BrowserExtension::restoreState(QDataStream &stream)
 {
+#if ENABLE_STATE
     QUrl u;
     qint32 xOfs, yOfs;
     stream >> u >> xOfs >> yOfs;
@@ -190,6 +193,7 @@ void BrowserExtension::restoreState(QDataStream &stream)
     // TODO add args.setMimeType
     d->m_part->setArguments(args);
     d->m_part->openUrl(u);
+#endif
 }
 
 bool BrowserExtension::isURLDropHandlingEnabled() const

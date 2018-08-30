@@ -31,7 +31,9 @@
 //AFA #include <kcolorscheme.h>
 //AFA #include <ksharedconfig.h>
 //AFA #include <kconfiggroup.h>
+#ifdef QT_WIDGETS_LIB
 #include <QToolTip>
+#endif
 #include "css/cssvalues.h"
 
 using namespace DOM;

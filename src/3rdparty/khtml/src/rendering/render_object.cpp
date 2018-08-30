@@ -3245,6 +3245,7 @@ void RenderObject::updateWidgetMasks()
 {
     for (RenderObject *curr = firstChild(); curr; curr = curr->nextSibling()) {
         if (curr->isWidget() && static_cast<RenderWidget *>(curr)->needsMask()) {
+#ifdef QT_WIDGETS_LIB
             QWidget *w = static_cast<RenderWidget *>(curr)->widget();
             if (!w) {
                 return;
@@ -3291,6 +3292,7 @@ void RenderObject::updateWidgetMasks()
             } else {
                 w->clearMask();
             }
+#endif
         } else if (!curr->layer() || !curr->layer()->isStackingContext()) {
             curr->updateWidgetMasks();
         }
