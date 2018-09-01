@@ -5,6 +5,7 @@
 *           (C) 2000-2003 Dirk Mueller (mueller@kde.org)
 *           (C) 2003 Apple Computer, Inc.
 *           (C) 2004-2006 Germain Garand (germain@ebooksfrance.org)
+* Copyright (C) 2018 afarcat <kabak@sina.com>
 *
 * This library is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Library General Public
@@ -252,6 +253,11 @@ RenderWidget::~RenderWidget()
             m_widget->clearFocus();
         }
         m_widget->hide();
+#else
+        if (m_widget->hasFocus()) {
+            m_widget->setFocus(false);
+        }
+        m_widget->setVisible(false);
 #endif
         if (m_ownsWidget) {
             m_widget->deleteLater();
@@ -277,9 +283,13 @@ void  RenderWidget::resizeWidget(int w, int h)
     // it is bigger )
     h = qMin(h, 3072);
     w = qMin(w, 2000);
-#ifdef QT_WIDGETS_LIB
+
     if (m_widget->width() != w || m_widget->height() != h) {
+#ifdef QT_WIDGETS_LIB
         m_widget->resize(w, h);
+#else
+        m_widget->setSize(QSize(w, h));
+#endif
         if (isRedirectedWidget() && qobject_cast<KHTMLView *>(m_widget) && !m_widget->isVisible()) {
             // Emission of Resize event is delayed.
             // we have to pre-call KHTMLView::resizeEvent
@@ -292,7 +302,6 @@ void  RenderWidget::resizeWidget(int w, int h)
             static_cast<KHTMLView *>(m_widget)->resizeEvent(&e);
         }
     }
-#endif
 }
 
 bool RenderWidget::event(QEvent *e)
@@ -318,6 +327,8 @@ void RenderWidget::setQWidget(QWidget *widget)
             disconnect(m_widget, SIGNAL(destroyed()), this, SLOT(slotWidgetDestructed()));
 #ifdef QT_WIDGETS_LIB
             m_widget->hide();
+#else
+            m_widget->setVisible(false);
 #endif
             if (m_ownsWidget) {
                 m_widget->deleteLater();    //Might happen due to event on the widget, so be careful
@@ -338,6 +349,8 @@ void RenderWidget::setQWidget(QWidget *widget)
             }
 #ifdef QT_WIDGETS_LIB
             m_widget->setParent(m_view->widget());
+#else
+            m_widget->setParentItem(m_view);
 #endif
             if (isRedirectedSubFrame) {
                 static_cast<KHTMLView *>(m_widget)->setHasStaticBackground();
@@ -371,6 +384,9 @@ void RenderWidget::setQWidget(QWidget *widget)
 #ifdef QT_WIDGETS_LIB
             m_widget->move(0, -500000);
             m_widget->hide();
+#else
+            m_widget->setPosition(QPoint(0, -500000));
+            m_widget->setVisible(false);
 #endif
         }
     }
@@ -600,6 +616,8 @@ void RenderWidget::setStyle(RenderStyle *_style)
             }
 #ifdef QT_WIDGETS_LIB
             m_widget->hide();
+#else
+            m_widget->setVisible(false);
 #endif
         }
     }
@@ -639,13 +657,8 @@ void RenderWidget::paint(PaintInfo &paintInfo, int _tx, int _ty)
     int yPos = _ty + borderTop() + paddingTop();
 
     bool khtmlw = isRedirectedWidget();
-#ifdef QT_WIDGETS_LIB
     int childw = m_widget->width();
     int childh = m_widget->height();
-#else
-    int childw = m_widget->property("width").toInt();
-    int childh = m_widget->property("height").toInt();
-#endif
     if ((childw == 2000 || childh == 3072) && m_widget->inherits("KHTMLView")) {
         KHTMLView *vw = static_cast<KHTMLView *>(m_widget);
         int cy = m_view->contentsY();
@@ -655,8 +668,8 @@ void RenderWidget::paint(PaintInfo &paintInfo, int _tx, int _ty)
         int childx = m_widget->pos().x();
         int childy = m_widget->pos().y();
 #else
-        int childx = m_widget->property("x").toInt();
-        int childy = m_widget->property("y").toInt();
+        int childx = m_widget->x();
+        int childy = m_widget->y();
 #endif
 
         int xNew = xPos;
@@ -691,7 +704,7 @@ void RenderWidget::paint(PaintInfo &paintInfo, int _tx, int _ty)
 #ifdef QT_WIDGETS_LIB
     m_widget->show();
 #else
-    m_widget->setProperty("visible", true);
+    m_widget->setVisible(true);
 #endif
     if (khtmlw) {
 #ifdef QT_WIDGETS_LIB
@@ -1153,6 +1166,9 @@ bool RenderWidget::handleEvent(const DOM::EventImpl &ev)
 #ifdef QT_WIDGETS_LIB
             p.setX(qMin(qMax(0, p.x()), m_widget->width()));
             p.setY(qMin(qMax(0, p.y()), m_widget->height()));
+#else
+            p.setX(qMin(qMax(0, p.x()), (int)m_widget->width()));
+            p.setY(qMin(qMax(0, p.y()), (int)m_widget->height()));
 #endif
         }
 

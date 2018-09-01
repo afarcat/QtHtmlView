@@ -4,6 +4,7 @@
  * Copyright (C) 1999-2003 Lars Knoll (knoll@kde.org)
  *           (C) 1999 Antti Koivisto (koivisto@kde.org)
  *           (C) 2000-2003 Dirk Mueller (mueller@kde.org)
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -44,15 +45,23 @@ class QWidget;
 #include <QProxyStyle>
 #include <qcombobox.h>
 #else
-#include <QQuickItem>
-#define QCheckBox QQuickItem
-#define QRadioButton QQuickItem
-#define QPushButton QQuickItem
-#define QLineEdit QQuickItem
-#define QComboBox QQuickItem
-#define QListWidget QQuickItem
-#define QTextEdit QQuickItem
-#define QScrollBar QQuickItem
+#include <QtQuickTemplates2/private/qquickcombobox_p.h>
+#include <QtQuickTemplates2/private/qquickcheckbox_p.h>
+#include <QtQuickTemplates2/private/qquickradiobutton_p.h>
+#include <QtQuickTemplates2/private/qquickbutton_p.h>
+#include <QtQuickTemplates2/private/qquicktextfield_p.h>
+#include <QtQuickTemplates2/private/qquicktextarea_p.h>
+#include <QtQuickTemplates2/private/qquickscrollbar_p.h>
+#include <QtQuick/private/qquicklistview_p.h>
+
+#define QCheckBox QQuickCheckBox
+#define QComboBox QQuickComboBox
+#define QRadioButton QQuickRadioButton
+#define QPushButton QQuickButton
+#define QLineEdit QQuickTextField
+#define QTextEdit QQuickTextArea
+#define QListWidget QQuickListView
+#define QScrollBar QQuickScrollBar
 #endif
 #include "dom/dom_misc.h"
 
@@ -721,6 +730,8 @@ public:
         QScrollBar(parent)
 #endif
     {
+        setOrientation(orientation);
+
         m_kwp->setIsRedirected(true);
     }
 };

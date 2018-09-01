@@ -3,6 +3,7 @@
  *
  * Copyright (C) 1999-2003 Lars Knoll (knoll@kde.org)
  *           (C) David Carson  <dacarson@gmail.com>
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public

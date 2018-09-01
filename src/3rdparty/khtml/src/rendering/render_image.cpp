@@ -5,6 +5,7 @@
  *           (C) 1999 Antti Koivisto (koivisto@kde.org)
  *           (C) 2000-2003 Dirk Mueller (mueller@kde.org)
  *           (C) 2003 Apple Computer, Inc.
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -57,6 +58,7 @@ using namespace khtml;
 using namespace khtmlImLoad;
 
 #ifndef QT_WIDGETS_LIB
+//AFA: copy from qdrawutil.h
 namespace {
 class PainterStateGuard {
     Q_DISABLE_COPY(PainterStateGuard)

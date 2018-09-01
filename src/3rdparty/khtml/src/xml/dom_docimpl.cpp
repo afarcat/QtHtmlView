@@ -8,6 +8,7 @@
  *           (C) 2006 Allan Sandfeld Jensen (kde@carewolf.com)
  *           (C) 2005 Frerich Raabe <raabe@kde.org>
  *           (C) 2010 Maksim Orlovich <maksim@kde.org>
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -122,6 +123,10 @@
 
 #include <stdlib.h>
 #include <limits.h>
+
+#ifndef QT_WIDGETS_LIB
+extern int qt_defaultDpiY();
+#endif
 
 #undef FOCUS_EVENT  // for win32, MinGW
 
@@ -1577,7 +1582,7 @@ void DocumentImpl::attach()
     m_styleSelector = new CSSStyleSelector(this, m_usersheet, m_styleSheets, m_url,
                                            !inCompatMode());
     m_render = new(m_renderArena.get()) RenderCanvas(this, m_view);
-    m_styleSelector->computeFontSizes(m_paintDevice->logicalDpiY(), m_view ? m_view->part()->fontScaleFactor() : 100);
+    m_styleSelector->computeFontSizes(/*AFA m_paintDevice->*/logicalDpiY(), m_view ? m_view->part()->fontScaleFactor() : 100);
     recalcStyle(Force);
 
     RenderObject *render = m_render;
@@ -1659,7 +1664,11 @@ khtml::Tokenizer *DocumentImpl::createTokenizer()
 
 int DocumentImpl::logicalDpiY()
 {
+#ifdef QT_WIDGETS_LIB
     return m_paintDevice->logicalDpiY();
+#else
+    return qt_defaultDpiY();
+#endif
 }
 
 void DocumentImpl::open(bool clearEventListeners)
@@ -2590,6 +2599,8 @@ void DocumentImpl::quietResetFocus()
     if (view()) {
 #ifdef QT_WIDGETS_LIB
         view()->setFocus();
+#else
+        view()->setFocus(true);
 #endif
     }
 }
@@ -2676,6 +2687,14 @@ void DocumentImpl::setFocusNode(NodeImpl *newFocusNode)
                         static_cast<RenderWidget *>(m_focusNode->renderer())->widget()->setFocus();
                     }
                 }
+#else
+                if (!m_focusNode->renderer() || !m_focusNode->renderer()->isWidget()) {
+                    view()->setFocus(true);
+                } else if (static_cast<RenderWidget *>(m_focusNode->renderer())->widget()) {
+                    if (view()->isVisible()) {
+                        static_cast<RenderWidget *>(m_focusNode->renderer())->widget()->setFocus(true);
+                    }
+                }
 #endif
             }
         } else {
@@ -2683,6 +2702,8 @@ void DocumentImpl::setFocusNode(NodeImpl *newFocusNode)
             if (view()) {
 #ifdef QT_WIDGETS_LIB
                 view()->setFocus();
+#else
+                view()->setFocus(true);
 #endif
             }
         }

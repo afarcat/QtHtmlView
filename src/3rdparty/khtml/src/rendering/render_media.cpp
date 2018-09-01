@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2009 Michael Howell <mhowell123@gmail.com>.
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
  * Parts copyright (C) 2007, 2008 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -46,6 +47,9 @@ RenderMedia::RenderMedia(HTMLMediaElement *element) : RenderWidget(element), m_p
 #ifdef QT_WIDGETS_LIB
     QWidget *container = new QWidget();
     container->setLayout(new QVBoxLayout(container));
+    setQWidget(container);
+#else
+    QWidget *container = new QWidget();
     setQWidget(container);
 #endif
 }

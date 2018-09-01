@@ -7,7 +7,11 @@ TEMPLATE = lib
 
 QT += core gui xml multimedia network
 QT += quick quickcontrols2
+QT += qml-private quick-private quicktemplates2-private
 
 DESTDIR = ../../bin
 
 include (../src.pri)
+
+SOURCES += \
+    $$PWD/htmlqml_plugin.cpp

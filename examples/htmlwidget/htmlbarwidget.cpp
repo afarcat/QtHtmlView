@@ -10,6 +10,7 @@
 
 #include <QFileDialog>
 #include <QLineEdit>
+#include <QStandardPaths>
 
 HtmlBarWidget::HtmlBarWidget(HtmlWidget *parentHtmlWidget, QWidget *parent) :
     QWidget(parent),
@@ -124,7 +125,7 @@ void HtmlBarWidget::slotOpenUrl()
 {
     QUrl url = QFileDialog::getOpenFileUrl(htmlWidget->widget(),
                                            tr("Please select file"),
-                                           QUrl(),
+                                           QStandardPaths::standardLocations(QStandardPaths::DocumentsLocation).last(),
                                            QString("*.htm *.html"));
     if (url.isValid()) {
         htmlWidget->openUrl(url);

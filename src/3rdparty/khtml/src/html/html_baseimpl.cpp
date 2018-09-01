@@ -5,6 +5,7 @@
  *           (C) 1999 Antti Koivisto (koivisto@kde.org)
  *           (C) 2000 Simon Hausmann (hausmann@kde.org)
  *           (C) 2001-2003 Dirk Mueller (mueller@kde.org)
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -497,6 +498,14 @@ void HTMLFrameElementImpl::setFocus(bool received)
         renderFrame->widget()->setFocus();
     } else {
         renderFrame->widget()->clearFocus();
+    }
+#else
+    if (renderFrame->widget()) {
+        if (received) {
+            renderFrame->widget()->setFocus(true);
+        } else {
+            renderFrame->widget()->setFocus(false);
+        }
     }
 #endif
 }

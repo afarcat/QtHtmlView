@@ -6,6 +6,7 @@
  *           (C) 2000 Stefan Schimanski (1Stein@gmx.de)
  *           (C) 2003 Apple Computer, Inc.
  *           (C) 2005 Niels Leenheer <niels.leenheer@gmail.com>
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public

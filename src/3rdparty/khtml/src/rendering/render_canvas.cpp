@@ -5,6 +5,7 @@
  *           (C) 2003 Apple Computer, Inc.
  *           (C) 2005 Allan Sandfeld Jensen (kde@carewolf.com)
  *           (C) 2007-2009 Germain Garand (germain@ebooksfrance.org)
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -260,20 +261,21 @@ void RenderCanvas::updateDocumentSize()
         int overrideH = m_view->verticalScrollBarPolicy() == Qt::ScrollBarAsNeeded ? 0 : hDocH;
         int overrideW = m_view->verticalScrollBarPolicy() == Qt::ScrollBarAsNeeded ? 0 : hDocW;
 #else
-        bool vss = false;//AFA m_view->verticalScrollBar()->isVisible();
-        bool hss = false;//AFA m_view->horizontalScrollBar()->isVisible();
+        //AFA: in qml, ScrollBar is float
+        bool vss = false;
+        bool hss = false;
 
         // calculate the extent of scrollbars
-        int vsPixSize = 0;//AFA m_view->verticalScrollBar()->sizeHint().width();
-        int hsPixSize = 0;//AFA m_view->horizontalScrollBar()->sizeHint().height();
+        int vsPixSize = 0;
+        int hsPixSize = 0;
 
         // this variable holds the size the viewport will have after the inner content is resized to
         // the new document dimensions
-        QSize viewport = QSize(m_view->property("width").toInt(), m_view->property("height").toInt());//AFA m_view->maximumViewportSize();
+        QSize viewport = m_view->size().toSize();
 
         // of course, if the scrollbar policy isn't auto, there's no point adjusting any value..
-        int overrideH = 0;//AFA m_view->verticalScrollBarPolicy() == Qt::ScrollBarAsNeeded ? 0 : hDocH;
-        int overrideW = 0;//AFA m_view->verticalScrollBarPolicy() == Qt::ScrollBarAsNeeded ? 0 : hDocW;
+        int overrideH = 0;
+        int overrideW = 0;
 #endif
 
         if (!overrideW && hDocW > viewport.width()) {

@@ -3,6 +3,8 @@
  *
  * Copyright (C) 2005, 2006 Kimmo Kinnunen <kimmo.t.kinnunen@nokia.com>.
  *           (C) 2008 Germain Garand <germain@ebooksfrance.org>
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -41,6 +43,9 @@
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QColormap>
+#else
+#include <QGuiApplication>
+#include <QScreen>
 #endif
 
 using namespace DOM;
@@ -389,6 +394,10 @@ static bool color_indexMediaFeatureEval(CSSValueImpl *value, RenderStyle *, KHTM
 #ifdef QT_WIDGETS_LIB
         int sn = QApplication::desktop()->screenNumber(rootPart->view());
         numColors = QApplication::desktop()->screen(sn)->colorCount();
+#else
+        QScreen *sn = qApp->screenAt(QPoint(rootPart->view()->width()/2, rootPart->view()->height()/2));
+        if (sn) {
+        }
 #endif
     }
     if (numColors == INT_MAX) {
@@ -423,6 +432,11 @@ static bool colorMediaFeatureEval(CSSValueImpl *value, RenderStyle *, KHTMLPart 
         if (QColormap::instance(sn).mode() != QColormap::Gray) {
             bitsPerComponent = QApplication::desktop()->screen(sn)->depth() / 3;
         }
+#else
+        QScreen *sn = qApp->screenAt(QPoint(rootPart->view()->width()/2, rootPart->view()->height()/2));
+        if (sn) {
+            bitsPerComponent = sn->depth() / 3;
+        }
 #endif
     }
     if (value && bitsPerComponent) {
@@ -455,6 +469,11 @@ static bool monochromeMediaFeatureEval(CSSValueImpl *value, RenderStyle *, KHTML
         } else if (QColormap::instance(sn).mode() == QColormap::Gray) {
             depth = QApplication::desktop()->screen(sn)->depth();
         }
+#else
+        QScreen *sn = qApp->screenAt(QPoint(rootPart->view()->width()/2, rootPart->view()->height()/2));
+        if (sn) {
+            depth = sn->depth();
+        }
 #endif
     }
     if (value) {
@@ -482,7 +501,10 @@ static bool device_aspect_ratioMediaFeatureEval(CSSValueImpl *value, RenderStyle
 #ifdef QT_WIDGETS_LIB
             sg = QApplication::desktop()->screen(QApplication::desktop()->screenNumber(rootPart->view()))->rect();
 #else
-            //AFA-FIXME
+            QScreen *sn = qApp->screenAt(QPoint(rootPart->view()->width()/2, rootPart->view()->height()/2));
+            if (sn) {
+                sg = sn->geometry();
+            }
 #endif
         }
         if (parseAspectRatio(value, h, v)) {
@@ -584,12 +606,17 @@ static bool device_heightMediaFeatureEval(CSSValueImpl *value, RenderStyle *styl
         DOM::DocumentImpl *doc =  static_cast<DOM::DocumentImpl *>(rootPart->document()/*AFA .handle()*/);
         QPaintDevice *pd = doc->paintDevice();
         bool printing = pd ? (pd->devType() == QInternal::Printer) : false;
-        int height;
+        int height = 0;
         if (printing) {
             height = pd->height();
         } else {
 #ifdef QT_WIDGETS_LIB
             height = QApplication::desktop()->screen(QApplication::desktop()->screenNumber(rootPart->view()))->rect().height();
+#else
+            QScreen *sn = qApp->screenAt(QPoint(rootPart->view()->width()/2, rootPart->view()->height()/2));
+            if (sn) {
+                height = sn->geometry().height();
+            }
 #endif
             doc = static_cast<DOM::DocumentImpl *>(part->document()/*AFA .handle()*/);
         }
@@ -611,12 +638,17 @@ static bool device_widthMediaFeatureEval(CSSValueImpl *value, RenderStyle *style
         DOM::DocumentImpl *doc =  static_cast<DOM::DocumentImpl *>(rootPart->document()/*AFA .handle()*/);
         QPaintDevice *pd = doc->paintDevice();
         bool printing = pd ? (pd->devType() == QInternal::Printer) : false;
-        int width;
+        int width = 0;
         if (printing) {
             width = pd->width();
         } else {
 #ifdef QT_WIDGETS_LIB
             width = QApplication::desktop()->screen(QApplication::desktop()->screenNumber(rootPart->view()))->rect().width();
+#else
+            QScreen *sn = qApp->screenAt(QPoint(rootPart->view()->width()/2, rootPart->view()->height()/2));
+            if (sn) {
+                width = sn->geometry().width();
+            }
 #endif
             doc = static_cast<DOM::DocumentImpl *>(part->document()/*AFA .handle()*/);
         }

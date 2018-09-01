@@ -8,6 +8,7 @@
  *           (C) 2007-2009 Germain Garand (germain@ebooksfrance.org)
  *           (C) 2007 Mitz Pettel (mitz@webkit.org)
  *           (C) 2007 Charles Samuels (charles@kde.org)
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -329,11 +330,9 @@ void RenderFormElement::setQWidget(QWidget *w)
 
 void RenderFormElement::updateFromElement()
 {
-#ifdef QT_WIDGETS_LIB
-    m_widget->setEnabled(!element()->disabled());
-#else
-    m_widget->setProperty("enabled", !element()->disabled());
-#endif
+    if (m_widget) {
+        m_widget->setEnabled(!element()->disabled());
+    }
 
     // If we've disabled a focused element, clear its focus,
     // so Qt doesn't do funny stuff like let one type into a disabled
@@ -475,11 +474,7 @@ void RenderButton::layout()
         // button text hiding 'trick' that makes use of negative text-indent,
         // which we do not support on form widgets.
         int ti = style()->textIndent().minWidth(containingBlockWidth());
-#ifdef QT_WIDGETS_LIB
-        if (m_widget->width() <= qAbs(ti)) {
-#else
-        if (m_widget->property("width").toInt() <= qAbs(ti)) {
-#endif
+        if (m_widget && m_widget->width() <= qAbs(ti)) {
             needsTextIndentHack = true;
         }
     }
@@ -518,7 +513,13 @@ RenderCheckBox::RenderCheckBox(HTMLInputElementImpl *element)
 
     connect(b, SIGNAL(stateChanged(int)), this, SLOT(slotStateChanged(int)));
 #else
-    //AFA-FIXME
+    CheckBoxWidget *b = new CheckBoxWidget(view());
+    setQWidget(b);
+
+    // prevent firing toggled() signals on initialization
+    b->setChecked(element->checked());
+
+    //AFA connect(b, SIGNAL(checkStateChanged()), this, SLOT(slotStateChanged(int)));
 #endif
 
     m_ignoreStateChanged = false;
@@ -535,7 +536,11 @@ void RenderCheckBox::calcMinMaxWidth()
     setIntrinsicWidth(s.width());
     setIntrinsicHeight(s.height());
 #else
-    //AFA-FIXME
+    QCheckBox *cb = static_cast<QCheckBox *>(m_widget);
+    QSize s(qMin(22, qMax(14, 22)),
+            qMin(22, qMax(12, 22)));
+    setIntrinsicWidth(s.width());
+    setIntrinsicHeight(s.height());
 #endif
 
     RenderButton::calcMinMaxWidth();
@@ -543,19 +548,11 @@ void RenderCheckBox::calcMinMaxWidth()
 
 void RenderCheckBox::updateFromElement()
 {
-#ifdef QT_WIDGETS_LIB
-    if (widget()->isChecked() != element()->checked()) {
+    if (widget() && widget()->isChecked() != element()->checked()) {
         m_ignoreStateChanged = true;
         widget()->setChecked(element()->checked());
         m_ignoreStateChanged = false;
     }
-#else
-    if (widget()->property("checked").toBool() != element()->checked()) {
-        m_ignoreStateChanged = true;
-        widget()->setProperty("checked", element()->checked());
-        m_ignoreStateChanged = false;
-    }
-#endif
 
     RenderButton::updateFromElement();
 }
@@ -599,7 +596,14 @@ RenderRadioButton::RenderRadioButton(HTMLInputElementImpl *element)
 
     connect(b, SIGNAL(toggled(bool)), this, SLOT(slotToggled(bool)));
 #else
-    //AFA-FIXME
+    RadioButtonWidget *b = new RadioButtonWidget(view());
+    b->setAutoExclusive(false);
+    setQWidget(b);
+
+    // prevent firing toggled() signals on initialization
+    b->setChecked(element->checked());
+
+    connect(b, SIGNAL(toggled(bool)), this, SLOT(slotToggled(bool)));
 #endif
     m_ignoreToggled = false;
 }
@@ -607,11 +611,9 @@ RenderRadioButton::RenderRadioButton(HTMLInputElementImpl *element)
 void RenderRadioButton::updateFromElement()
 {
     m_ignoreToggled = true;
-#ifdef QT_WIDGETS_LIB
-    widget()->setChecked(element()->checked());
-#else
-    widget()->setProperty("checked", element()->checked());
-#endif
+    if (widget()) {
+        widget()->setChecked(element()->checked());
+    }
     m_ignoreToggled = false;
 
     RenderButton::updateFromElement();
@@ -628,7 +630,11 @@ void RenderRadioButton::calcMinMaxWidth()
     setIntrinsicWidth(s.width());
     setIntrinsicHeight(s.height());
 #else
-    //AFA-FIXME
+    QRadioButton *rb = static_cast<QRadioButton *>(m_widget);
+    QSize s(qMin(22, qMax(14, 22)),
+            qMin(22, qMax(12, 22)));
+    setIntrinsicWidth(s.width());
+    setIntrinsicHeight(s.height());
 #endif
 
     RenderButton::calcMinMaxWidth();
@@ -671,7 +677,8 @@ RenderSubmitButton::RenderSubmitButton(HTMLInputElementImpl *element)
     p->setDefault(false);
     p->setAutoDefault(false);
 #else
-    //AFA-FIXME
+    PushButtonWidget *p = new PushButtonWidget(view());
+    setQWidget(p);
 #endif
 }
 
@@ -710,6 +717,23 @@ void RenderSubmitButton::setPadding()
         .arg(RenderWidget::paddingTop())
         .arg(RenderWidget::paddingBottom()) + (shouldDisableNativeBorders() ? sBorderNoneSheet : QString())
         , widget());
+#else
+    if (!includesPadding()) {
+        return;
+    }
+
+    if (!RenderWidget::paddingLeft() && !RenderWidget::paddingRight() &&
+            !RenderWidget::paddingTop() && !RenderWidget::paddingBottom()) {
+        return;
+    }
+
+    QPushButton *pb = static_cast<QPushButton *>(m_widget);
+    if (pb) {
+        pb->setLeftPadding(RenderWidget::paddingLeft());
+        pb->setRightPadding(RenderWidget::paddingRight());
+        pb->setTopPadding(RenderWidget::paddingTop());
+        pb->setBottomPadding(RenderWidget::paddingBottom());
+    }
 #endif
 }
 
@@ -816,6 +840,47 @@ void RenderSubmitButton::calcMinMaxWidth()
 
     setIntrinsicWidth(s.width());
     setIntrinsicHeight(s.height());
+#else
+    QString raw = rawText();
+    QPushButton *pb = static_cast<QPushButton *>(m_widget);
+    pb->setText(raw);
+    pb->setFont(style()->font());
+
+    bool empty = raw.isEmpty();
+    if (empty) {
+        raw = QLatin1Char('X');
+    }
+    QFontMetrics fm(pb->font());
+    QSize s = fm.size(Qt::TextShowMnemonic, raw);
+
+    int margin = 12;
+
+    int w = s.width() + margin;
+    int h = s.height();
+
+    assert(includesPadding());
+    int hpadding = RenderWidget::paddingLeft() + RenderWidget::paddingRight();
+    int vpadding = RenderWidget::paddingTop() + RenderWidget::paddingBottom();
+
+    // add 30% margins to the width (heuristics to make it look similar to IE)
+    // ### FIXME BASELINE: we could drop this emulation and adopt Mozilla style buttons
+    // (+/- padding: 0px 8px 0px 8px) - IE is most often in a separate css
+    // code path nowadays, so we have wider buttons than other engines.
+    int toAdd = (w * 13 / 10) - w - hpadding;
+    toAdd = qMax(0, toAdd);
+    w += toAdd;
+
+    if (shouldDisableNativeBorders()) {
+        // we paint the borders ourselves, so let's override our height to something saner
+        h = s.height();
+    } else {
+        h -= vpadding;
+    }
+
+    s = QSize(w, h);
+
+    setIntrinsicWidth(s.width());
+    setIntrinsicHeight(s.height());
 #endif
 
     RenderButton::calcMinMaxWidth();
@@ -823,16 +888,13 @@ void RenderSubmitButton::calcMinMaxWidth()
 
 void RenderSubmitButton::updateFromElement()
 {
-#ifdef QT_WIDGETS_LIB
     QString oldText = static_cast<QPushButton *>(m_widget)->text();
     QString newText = rawText();
     static_cast<QPushButton *>(m_widget)->setText(newText);
     if (oldText != newText) {
         setNeedsLayoutAndMinMaxRecalc();
     }
-#else
-    //AFA-FIXME
-#endif
+
     RenderFormElement::updateFromElement();
 }
 
@@ -1240,6 +1302,25 @@ RenderLineEdit::RenderLineEdit(HTMLInputElementImpl *element)
     }
 
     setQWidget(edit);
+#else
+    LineEditWidget *edit = new LineEditWidget(element, view(), view());
+    //AFA connect(edit, SIGNAL(returnPressed()), this, SLOT(slotReturnPressed()));
+    //AFA connect(edit, SIGNAL(textChanged()), this, SLOT(slotTextChanged(QString)));
+
+    if (element->inputType() == HTMLInputElementImpl::PASSWORD) {
+        edit->setEchoMode(QLineEdit::Password);
+    }
+
+    if (element->autoComplete()) {
+        QStringList completions = view()->formCompletionItems(element->name().string());
+        if (completions.count()) {
+            //AFA edit->completionObject()->setItems(completions);
+            //AFA edit->setContextMenuPolicy(Qt::NoContextMenu);
+            //AFA edit->completionBox()->setTabHandling(false);
+        }
+    }
+
+    setQWidget(edit);
 #endif
 }
 
@@ -1356,7 +1437,10 @@ void RenderLineEdit::calcMinMaxWidth()
     setIntrinsicWidth(s.width());
     setIntrinsicHeight(s.height());
 #else
-    //AFA-FIXME
+    s = QSize(w, qMax(h, 14));
+
+    setIntrinsicWidth(s.width());
+    setIntrinsicHeight(s.height());
 #endif
 
     RenderFormElement::calcMinMaxWidth();
@@ -1369,22 +1453,22 @@ void RenderLineEdit::updateFromElement()
         ml = 32767;
     }
 
-#ifdef QT_WIDGETS_LIB
-    if (widget()->maxLength() != ml)  {
-        widget()->setMaxLength(ml);
-    }
+    if (widget()) {
+        if (widget()->maxLength() != ml)  {
+            widget()->setMaxLength(ml);
+        }
 
-    if (element()->value().string() != widget()->text()) {
-        m_blockElementUpdates = true;  // Do not block signals here (#188374)
-        int pos = widget()->cursorPosition();
-        widget()->setText(element()->value().string());
-        widget()->setCursorPosition(pos);
-        m_blockElementUpdates = false;
-    }
-    widget()->setReadOnly(element()->readOnly());
+        if (element()->value().string() != widget()->text()) {
+            m_blockElementUpdates = true;  // Do not block signals here (#188374)
+            int pos = widget()->cursorPosition();
+            widget()->setText(element()->value().string());
+            widget()->setCursorPosition(pos);
+            m_blockElementUpdates = false;
+        }
+        widget()->setReadOnly(element()->readOnly());
 
-    widget()->setPlaceholderText(element()->placeholder().string().remove(QLatin1Char('\n')).remove(QLatin1Char('\r')));
-#endif
+        widget()->setPlaceholderText(element()->placeholder().string().remove(QLatin1Char('\n')).remove(QLatin1Char('\r')));
+    }
 
     RenderFormElement::updateFromElement();
 }
@@ -1402,37 +1486,37 @@ void RenderLineEdit::slotTextChanged(const QString &string)
 
 void RenderLineEdit::select()
 {
-#ifdef QT_WIDGETS_LIB
-    static_cast<LineEditWidget *>(m_widget)->selectAll();
-#endif
+    if (m_widget) {
+        static_cast<LineEditWidget *>(m_widget)->selectAll();
+    }
 }
 
 long RenderLineEdit::selectionStart()
 {
-#ifdef QT_WIDGETS_LIB
-    LineEditWidget *w = static_cast<LineEditWidget *>(m_widget);
-    if (w->hasSelectedText()) {
-        return w->selectionStart();
-    } else {
-        return w->cursorPosition();
+    if (m_widget) {
+        LineEditWidget *w = static_cast<LineEditWidget *>(m_widget);
+        if (!w->selectedText().isEmpty()) {
+            return w->selectionStart();
+        } else {
+            return w->cursorPosition();
+        }
     }
-#else
-    return 0;
-#endif
+    else
+        return 0;
 }
 
 long RenderLineEdit::selectionEnd()
 {
-#ifdef QT_WIDGETS_LIB
-    LineEditWidget *w = static_cast<LineEditWidget *>(m_widget);
-    if (w->hasSelectedText()) {
-        return w->selectionStart() + w->selectedText().length();
-    } else {
-        return w->cursorPosition();
+    if (m_widget) {
+        LineEditWidget *w = static_cast<LineEditWidget *>(m_widget);
+        if (!w->selectedText().isEmpty()) {
+            return w->selectionStart() + w->selectedText().length();
+        } else {
+            return w->cursorPosition();
+        }
     }
-#else
-    return 0;
-#endif
+    else
+        return 0;
 }
 
 void RenderLineEdit::setSelectionStart(long pos)
@@ -1444,8 +1528,8 @@ void RenderLineEdit::setSelectionStart(long pos)
     if (end > pos) {
         w->setSelection(pos, end - pos);
     }
-    w->setCursorPosition(pos);
 #endif
+    w->setCursorPosition(pos);
 }
 
 void RenderLineEdit::setSelectionEnd(long pos)
@@ -1457,16 +1541,15 @@ void RenderLineEdit::setSelectionEnd(long pos)
     if (start < pos) {
         w->setSelection(start, pos - start);
     }
-
-    w->setCursorPosition(pos);
 #endif
+    w->setCursorPosition(pos);
 }
 
 void RenderLineEdit::setSelectionRange(long start, long end)
 {
     LineEditWidget *w = static_cast<LineEditWidget *>(m_widget);
-#ifdef QT_WIDGETS_LIB
     w->setCursorPosition(end);
+#ifdef QT_WIDGETS_LIB
     w->setSelection(start, end - start);
 #endif
 }
@@ -1674,6 +1757,19 @@ RenderFileButton::RenderFileButton(HTMLInputElementImpl *element)
 //    connect(w, SIGNAL(urlSelected(QUrl)), this, SLOT(slotUrlSelected()));
 
     setQWidget(w);
+#else
+    FileButtonWidget *w = new FileButtonWidget(view());
+
+    //AFA
+//    w->setMode(KFile::File | KFile::ExistingOnly);
+//    w->lineEdit()->setCompletionBox(new CompletionWidget(w));
+//    w->completionObject()->setDir(QUrl::fromLocalFile(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)));
+
+//    connect(w->lineEdit(), SIGNAL(returnPressed()), this, SLOT(slotReturnPressed()));
+//    connect(w->lineEdit(), SIGNAL(textChanged(QString)), this, SLOT(slotTextChanged(QString)));
+//    connect(w, SIGNAL(urlSelected(QUrl)), this, SLOT(slotUrlSelected()));
+
+    setQWidget(w);
 #endif
     m_haveFocus = false;
 }
@@ -1712,6 +1808,13 @@ void RenderFileButton::calcMinMaxWidth()
     s = s.expandedTo(QApplication::globalStrut());
 
     QSize bs = widget()->minimumSizeHint() - edit->minimumSizeHint();
+
+    setIntrinsicWidth(s.width() + bs.width());
+    setIntrinsicHeight(qMax(s.height(), bs.height()));
+#else
+    QSize s(w, qMax(h, 14));
+
+    QSize bs = s;
 
     setIntrinsicWidth(s.width() + bs.width());
     setIntrinsicHeight(qMax(s.height(), bs.height()));
@@ -2147,8 +2250,8 @@ void RenderSelect::layout()
     // ### maintain selection properly between type/size changes, and work
     // out how to handle multiselect->singleselect (probably just select
     // first selected one)
-#ifdef QT_WIDGETS_LIB
     // calculate size
+#ifdef QT_WIDGETS_LIB
     if (m_useListBox) {
         QListWidget *w = static_cast<QListWidget *>(m_widget);
 
@@ -2222,6 +2325,8 @@ void RenderSelect::layout()
         setIntrinsicWidth(w);
         setIntrinsicHeight(h);
     }
+#else
+    //AFA-FIXME
 #endif
 
     /// uuh, ignore the following line..
@@ -2236,11 +2341,7 @@ void RenderSelect::layout()
         foundOption = (listItems[i]->id() == ID_OPTION);
     }
 
-#ifdef QT_WIDGETS_LIB
     m_widget->setEnabled(foundOption && ! element()->disabled());
-#else
-    m_widget->setProperty("enabled", foundOption && ! element()->disabled());
-#endif
 }
 
 void RenderSelect::slotSelected(int index) // emitted by the combobox only
@@ -2351,7 +2452,13 @@ ListBoxWidget *RenderSelect::createListBox()
 
     return lb;
 #else
-    return nullptr;
+    ListBoxWidget *lb = new ListBoxWidget(view());
+    //lb->setSelectionMode(m_multiple ? QListWidget::ExtendedSelection : QListWidget::SingleSelection);
+    connect(lb, SIGNAL(currentIndexChanged()), this, SLOT(slotSelectionChanged()));
+    m_ignoreSelectEvents = false;
+    //lb->setMouseTracking(true);
+
+    return lb;
 #endif
 }
 
@@ -2362,7 +2469,9 @@ ComboBoxWidget *RenderSelect::createComboBox()
     connect(cb, SIGNAL(activated(int)), this, SLOT(slotSelected(int)));
     return cb;
 #else
-    return nullptr;
+    ComboBoxWidget *cb = new ComboBoxWidget(view());
+    connect(cb, SIGNAL(activated(int)), this, SLOT(slotSelected(int)));
+    return cb;
 #endif
 }
 
@@ -2432,6 +2541,13 @@ TextAreaWidget::TextAreaWidget(int wrap, QWidget *parent)
     //AFA KCursor::setAutoHideCursor(viewport(), true);
     setAcceptRichText(false);
     setMouseTracking(true);
+#else
+    if (wrap != DOM::HTMLTextAreaElementImpl::ta_NoWrap) {
+        setWrapMode(QTextEdit::Wrap);
+    } else {
+        setWrapMode(QTextEdit::NoWrap);
+    }
+    setTextFormat(QTextEdit::RichText);
 #endif
 }
 
@@ -2565,6 +2681,31 @@ void RenderTextArea::calcMinMaxWidth()
 
     setIntrinsicWidth(size.width());
     setIntrinsicHeight(size.height());
+#else
+    TextAreaWidget *w = static_cast<TextAreaWidget *>(m_widget);
+    const QFontMetrics &m = style()->fontMetrics();
+
+    int lvs = 0;
+    int lhs = 0;
+    int llm = 0;
+    int lrm = 0;
+    int lbm = 0;
+    int ltm = 0;
+
+    QRect r;
+    QRect o;
+    int hfw = (r.left() - o.left()) + (o.right() - r.right());
+    int vfw = (r.top() - o.top()) + (o.bottom() - r.bottom());
+
+    QSize size(qMax(element()->cols(), 1L)*m.width('x') + hfw + llm + lrm + lhs,
+               qMax(element()->rows(), 1L)*m.lineSpacing() + vfw + lbm + ltm + lvs);
+
+    assert(includesPadding());
+    size.rwidth() -= RenderWidget::paddingLeft() + RenderWidget::paddingRight();
+    size.rheight() -= RenderWidget::paddingTop() + RenderWidget::paddingBottom();
+
+    setIntrinsicWidth(size.width());
+    setIntrinsicHeight(size.height());
 #endif
 
     RenderFormElement::calcMinMaxWidth();
@@ -2668,11 +2809,7 @@ void RenderTextArea::setText(const QString &newText)
 void RenderTextArea::updateFromElement()
 {
     TextAreaWidget *w = static_cast<TextAreaWidget *>(m_widget);
-#ifdef QT_WIDGETS_LIB
     w->setReadOnly(element()->readOnly());
-#else
-    w->setProperty("readOnly", element()->readOnly());
-#endif
     //AFA w->setClickMessage(element()->placeholder().string());
     RenderFormElement::updateFromElement();
 }
@@ -2725,28 +2862,28 @@ void RenderTextArea::slotTextChanged()
 
 void RenderTextArea::select()
 {
-#ifdef QT_WIDGETS_LIB
-    static_cast<TextAreaWidget *>(m_widget)->selectAll();
-#endif
+    if (m_widget) {
+        static_cast<TextAreaWidget *>(m_widget)->selectAll();
+    }
 }
 
 long RenderTextArea::selectionStart()
 {
-#ifdef QT_WIDGETS_LIB
     TextAreaWidget *w = static_cast<TextAreaWidget *>(m_widget);
+#ifdef QT_WIDGETS_LIB
     return w->textCursor().selectionStart();
 #else
-    return 0;
+    return w->selectionStart();
 #endif
 }
 
 long RenderTextArea::selectionEnd()
 {
-#ifdef QT_WIDGETS_LIB
     TextAreaWidget *w = static_cast<TextAreaWidget *>(m_widget);
+#ifdef QT_WIDGETS_LIB
     return w->textCursor().selectionEnd();
 #else
-    return 0;
+    return w->selectionEnd();
 #endif
 }
 

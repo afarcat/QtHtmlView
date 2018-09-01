@@ -6,6 +6,7 @@
  *                     2000-2001 Simon Hausmann <hausmann@kde.org>
  *                     2000-2001 Dirk Mueller <mueller@kde.org>
  *                     2000 Stefan Schimanski <1Stein@gmx.de>
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -279,6 +280,11 @@ class KHTML_EXPORT QHTMLPart : public KParts::ReadOnlyPart
     Q_PROPERTY(QString lastModified READ lastModified)
     Q_PROPERTY(bool metaRefreshEnabled READ metaRefreshEnabled WRITE setMetaRefreshEnabled)
 
+    //AFA: use for qml
+#ifndef QT_WIDGETS_LIB
+    Q_PROPERTY(QHTMLView *view READ view WRITE setView)
+#endif
+
 public:
     enum GUIProfile { DefaultGUI, BrowserViewGUI /* ... */ };
 
@@ -307,12 +313,13 @@ public:
      * @p parentWidget is used as parent for both objects, the part and
      * the view.
      */
-    QHTMLPart(QWidget *parentWidget = nullptr,
 #ifdef QT_WIDGETS_LIB
+    QHTMLPart(QWidget *parentWidget = nullptr,
               QObject *parent = nullptr);
 #else
-              QQuickItem *parent = nullptr);
+    explicit QHTMLPart(QWidget *parent = nullptr);
 #endif
+
     /**
      * Constructs a new QHTMLPart.
      *
@@ -331,11 +338,8 @@ public:
      *   QHTMLPart * p = QHTMLPart( v ); // p will be assigned to v, so that v->part() == p
      * \endcode
      */
-    QHTMLPart(KHTMLView *view,
 #ifdef QT_WIDGETS_LIB
-              QObject *parent = nullptr);
-#else
-              QQuickItem *parent = nullptr);
+    QHTMLPart(KHTMLView *view, QObject *parent = nullptr);
 #endif
 
     /**
@@ -343,6 +347,13 @@ public:
      */
     virtual ~QHTMLPart();
 
+#ifndef QT_WIDGETS_LIB
+    void geometryChanged(const QRectF &newGeometry,
+                         const QRectF &oldGeometry) override;
+#endif
+
+    //AFA: use for qml
+public slots:
     /**
      * Opens the specified URL @p url.
      *
@@ -396,6 +407,9 @@ public:
      * Returns a pointer to the HTML document's view.
      */
     QHTMLView *view() const;
+
+    //AFA: use for qml
+    void setView(QHTMLView *view);
 
     /**
      * Enable/disable Javascript support. Note that this will
@@ -603,6 +617,7 @@ public:
      */
     void setCaretPosition(DOM::Node node, long offset, bool extendSelection = false);
 
+public:
     /**
      * Enumeration for displaying the caret.
      */
@@ -612,6 +627,8 @@ public:
         CaretBlink /**< caret toggles between visible and invisible */
     };
 
+    //AFA: use for qml
+public:
     /**
      * Returns the current caret policy when the view is not focused.
      */
@@ -1170,6 +1187,11 @@ public:
     bool inProgress() const;
 
 Q_SIGNALS:
+    /**
+     * Emitted if the cursor is moved over an element.
+     */
+    void showToolTip(const QPoint &point, const QString &text);
+
     /**
      * Emitted if the cursor is moved over an URL.
      */

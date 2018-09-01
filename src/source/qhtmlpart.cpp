@@ -10,6 +10,7 @@
  *                     2000-2005 David Faure <faure@kde.org>
  *                     2002 Apple Computer, Inc.
  *                     2010 Maksim Orlovich (maksim@kde.org)
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -210,26 +211,26 @@ public:
 };
 }
 
-QHTMLPart::QHTMLPart(QWidget *parentWidget,
 #ifdef QT_WIDGETS_LIB
-                     QObject *parent)
-#else
-                     QQuickItem *parent)
-#endif
+QHTMLPart::QHTMLPart(QWidget *parentWidget, QObject *parent)
     : KParts::ReadOnlyPart(parent)
+#else
+QHTMLPart::QHTMLPart(QWidget *parent)
+    : KParts::ReadOnlyPart(parent)
+#endif
 {
     d = nullptr;
     QHTMLGlobal::registerPart(this);
     //AFA setComponentData(QHTMLGlobal::aboutData(), false);
+#ifdef QT_WIDGETS_LIB
     init(new QHTMLView(this, parentWidget));
+#else
+    //AFA-note: qml don't need init() here
+#endif
 }
 
-QHTMLPart::QHTMLPart(KHTMLView *view,
 #ifdef QT_WIDGETS_LIB
-                     QObject *parent)
-#else
-                     QQuickItem *parent)
-#endif
+QHTMLPart::QHTMLPart(KHTMLView *view, QObject *parent)
     : KParts::ReadOnlyPart(parent)
 {
     d = nullptr;
@@ -241,6 +242,7 @@ QHTMLPart::QHTMLPart(KHTMLView *view,
     }
     init(view);
 }
+#endif
 
 void QHTMLPart::init(QHTMLView *view)
 {
@@ -272,7 +274,7 @@ void QHTMLPart::init(QHTMLView *view)
         setWidget(widget);
         widget->setFocusProxy(d->m_view);
 #else
-        //AFA-FIXME
+        setWidget(view);
 #endif
     } else {
         setWidget(view);
@@ -652,6 +654,22 @@ QHTMLPart::~QHTMLPart()
     delete d; d = nullptr;
     QHTMLGlobal::deregisterPart(this);
 }
+
+#ifndef QT_WIDGETS_LIB
+void KHTMLPart::geometryChanged(const QRectF &newGeometry, const QRectF &oldGeometry)
+{
+    // fill parent
+    if (d && d->m_view && d->m_view->viewport()) {
+        d->m_view->viewport()->setPosition(QPointF(0, 0));
+        d->m_view->viewport()->setSize(QSizeF(width(), height()));
+    }
+
+    if (d && d->m_view) {
+        d->m_view->setPosition(QPointF(0, 0));
+        d->m_view->setSize(QSizeF(width(), height()));
+    }
+}
+#endif
 
 bool QHTMLPart::restoreURL(const QUrl &url)
 {
@@ -1169,7 +1187,17 @@ KParts::BrowserExtension *QHTMLPart::browserExtension() const
 
 QHTMLView *QHTMLPart::view() const
 {
-    return d->m_view;
+    if (d)
+        return d->m_view;
+    else
+        return nullptr;
+}
+
+void KHTMLPart::setView(KHTMLView *view)
+{
+    assert(view && !d);
+
+    init(view);
 }
 
 #if ENABLE(GUI)
@@ -2193,6 +2221,8 @@ void QHTMLPart::begin(const QUrl &url, int xOffset, int yOffset)
     if (d->m_view->underMouse()) {
         QToolTip::hideText();    // in case a previous tooltip is still shown
     }
+#else
+    emit showToolTip(QPoint(-1, -1), QString());
 #endif
 
     // No need to show this for a new page until an error is triggered
@@ -3738,9 +3768,7 @@ void QHTMLPart::selectionLayoutChanged()
         // make sure that caret is visible
         QRect r(d->editor_context.m_selection.getRepaintRect());
         if (d->editor_context.m_caretPaint) {
-#ifdef QT_WIDGETS_LIB
             d->m_view->ensureVisible(r.x(), r.y());
-#endif
         }
     }
 
@@ -4140,6 +4168,8 @@ bool QHTMLPart::urlSelected(const QString &url, int button, int state, const QSt
     }
 #ifdef QT_WIDGETS_LIB
     view()->viewport()->unsetCursor();
+#else
+    view()->unsetCursor();
 #endif
     emit d->m_extension->openUrlRequest(cURL, args, browserArgs);
 
@@ -6105,6 +6135,8 @@ void QHTMLPart::show()
     if (widget()) {
 #ifdef QT_WIDGETS_LIB
         widget()->show();
+#else
+        widget()->setVisible(true);
 #endif
     }
 }
@@ -6114,6 +6146,8 @@ void QHTMLPart::hide()
     if (widget()) {
 #ifdef QT_WIDGETS_LIB
         widget()->hide();
+#else
+        widget()->setVisible(false);
 #endif
     }
 }
@@ -7391,10 +7425,8 @@ void QHTMLPart::setActiveNode(const DOM::Node &node)
 
     // Scroll the view if necessary to ensure that the new focus node is visible
     QRect rect  = node.handle()->getRect();
-#ifdef QT_WIDGETS_LIB
     d->m_view->ensureVisible(rect.right(), rect.bottom());
     d->m_view->ensureVisible(rect.left(), rect.top());
-#endif
 }
 
 DOM::Node QHTMLPart::activeNode() const

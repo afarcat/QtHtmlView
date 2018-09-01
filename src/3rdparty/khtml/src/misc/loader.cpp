@@ -6,6 +6,7 @@
               (C) 2002 Waldo Bastian (bastian@kde.org)
               (C) 2003 Apple Computer, Inc.
               (C) 2006-2010 Germain Garand (germain@ebooksfrance.org)
+    Copyright (C) 2018 afarcat <kabak@sina.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public

@@ -8,6 +8,7 @@
  *           (C) 2006 Samuel Weinig (sam.weinig@gmail.com)
  *           (C) 2007 Germain Garand (germain@ebooksfrance.org)
  *           (C) 2008 Fredrik Höglund (fredrik@kde.org)
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -2650,6 +2651,23 @@ bool RenderBox::handleEvent(const DOM::EventImpl &e)
                 accepted = true;
             }
         }
+#else
+        bool d = (we.delta() < 0);
+        if (orient == Qt::Vertical) {
+            if (QScrollBar *vsb = layer()->verticalScrollbar()) {
+                if ((d && vsb->position() != vsb->size()) || (!d && vsb->position() != 0/*vsb->minimum()*/)) {
+                    QCoreApplication::sendEvent(vsb, &we);
+                }
+                accepted = true;
+            }
+        } else {
+            if (QScrollBar *hsb = layer()->horizontalScrollbar()) {
+                if ((d && hsb->position() != hsb->size()) || (!d && hsb->position() != 0/*hsb->minimum()*/)) {
+                    QCoreApplication::sendEvent(hsb, &we);
+                }
+                accepted = true;
+            }
+        }
 #endif
         break;
     }
@@ -2695,6 +2713,41 @@ bool RenderBox::handleEvent(const DOM::EventImpl &e)
         case Qt::Key_Right:
             if (hbar) {
                 hbar->triggerAction(QScrollBar::SliderSingleStepAdd);
+            }
+            break;
+        default:
+            break;
+        }
+#else
+        switch (ke->key()) {
+        case Qt::Key_PageUp:
+            if (vbar) {
+                vbar->decrease();
+            }
+            break;
+        case Qt::Key_PageDown:
+            if (vbar) {
+                vbar->increase();
+            }
+            break;
+        case Qt::Key_Up:
+            if (vbar) {
+                vbar->decrease();
+            }
+            break;
+        case Qt::Key_Down:
+            if (vbar) {
+                vbar->increase();
+            }
+            break;
+        case Qt::Key_Left:
+            if (hbar) {
+                hbar->increase();
+            }
+            break;
+        case Qt::Key_Right:
+            if (hbar) {
+                hbar->decrease();
             }
             break;
         default:

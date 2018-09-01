@@ -6,6 +6,7 @@
              (C) 1999 Lars Knoll (knoll@kde.org)
              (C) 1999 Antti Koivisto (koivisto@kde.org)
              (C) 2006 Germain Garand (germain@ebooksfrance.org)
+   Copyright (C) 2018 afarcat <kabak@sina.com>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -36,6 +37,8 @@
 #define QWidget QQuickItem
 #define QScrollArea QQuickPaintedItem
 #define QAbstractScrollArea QQuickItem
+class QQuickFlickable;
+class QQuickScrollBar;
 #endif
 
 class QPainter;
@@ -131,11 +134,21 @@ class KHTML_EXPORT QHTMLView : public QScrollArea, public khtml::KHTMLWidget
     friend class KJS::ExternalFunc;
     friend void khtml::applyRule(DOM::CSSProperty *prop);
 
+    //AFA: use for qml
+#ifndef QT_WIDGETS_LIB
+    Q_PROPERTY(QHTMLPart *part READ part WRITE setPart)
+    Q_PROPERTY(QWidget *viewport READ viewport WRITE setViewport)
+#endif
+
 public:
     /**
      * Constructs a QHTMLView.
      */
+#ifdef QT_WIDGETS_LIB
     QHTMLView(QHTMLPart *part, QWidget *parent);
+#else
+    explicit QHTMLView(QWidget *parent = nullptr);
+#endif
     virtual ~QHTMLView();
 
     /**
@@ -146,6 +159,21 @@ public:
     {
         return m_part;
     }
+
+#ifndef QT_WIDGETS_LIB
+    void ensureVisible(int x, int y, int xmargin = 50, int ymargin = 50);
+
+    QWidget *viewport() const;
+    void setViewport(QWidget *viewport);
+
+    QQuickFlickable *flickable() const;
+
+    QQuickScrollBar *horizontalScrollBar() const;
+    QQuickScrollBar *verticalScrollBar() const;
+
+    void geometryChanged(const QRectF &newGeometry,
+                         const QRectF &oldGeometry) override;
+#endif
 
     int frameWidth() const
     {
@@ -373,7 +401,7 @@ protected:
 
     bool event(QEvent *event) override;
 #ifdef QT_WIDGETS_LIB
-    void paintEvent(QPaintEvent *) /*AFA override*/;
+    void paintEvent(QPaintEvent *) override;
 #else
     void paint(QPainter *painter) override;
 #endif
@@ -389,6 +417,11 @@ protected:
     void mouseReleaseEvent(QMouseEvent *) override;
 #ifndef QT_NO_WHEELEVENT
     void wheelEvent(QWheelEvent *) override;
+#endif
+#ifndef QT_WIDGETS_LIB
+    void hoverEnterEvent(QHoverEvent *event) override;
+    void hoverMoveEvent(QHoverEvent *event) override;
+    void hoverLeaveEvent(QHoverEvent *event) override;
 #endif
     void dragEnterEvent(QDragEnterEvent *) override;
     void dropEvent(QDropEvent *) override;

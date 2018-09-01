@@ -2,6 +2,7 @@
  * This file is part of the html renderer for KDE.
  *
  * Copyright (C) 2000-2003 Lars Knoll (knoll@kde.org)
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -29,6 +30,8 @@
 
 #ifdef QT_WIDGETS_LIB
 #include <QScrollBar>
+#else
+#include <QtQuickTemplates2/private/qquickscrollbar_p.h>
 #endif
 
 using namespace khtml;
@@ -101,7 +104,18 @@ void RenderBody::layout()
             canvas->view()->horizontalScrollBar()->setPalette(style()->palette());
             canvas->view()->verticalScrollBar()->setPalette(style()->palette());
 #else
-            //AFA-FIXME
+            QQuickScrollBar *hbar = canvas->view()->horizontalScrollBar();
+            if (hbar) {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
+                hbar->setPalette(style()->palette());
+#endif
+            }
+            QQuickScrollBar *vbar = canvas->view()->verticalScrollBar();
+            if (vbar) {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
+                vbar->setPalette(style()->palette());
+#endif
+            }
 #endif
         }
         scrollbarsStyled = true;

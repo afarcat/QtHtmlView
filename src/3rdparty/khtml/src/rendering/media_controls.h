@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2009 Michael Howell <mhowell123@gmail.com>.
  * Parts copyright (C) 2007, 2008 Apple Inc. All rights reserved.
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions

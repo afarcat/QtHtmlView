@@ -3,6 +3,7 @@
  *
  * Copyright (C) 1999 Lars Knoll (knoll@kde.org)
  *           (C) 2006 Germain Garand (germain@ebooksfrance.org)
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -142,11 +143,7 @@ public:
     bool isRedirectedWidget() const;
     bool isDisabled() const
     {
-#ifdef QT_WIDGETS_LIB
         return m_widget && !m_widget->isEnabled();
-#else
-        return m_widget && !m_widget->property("enabled").toBool();
-#endif
     }
 
 #ifdef ENABLE_DUMP

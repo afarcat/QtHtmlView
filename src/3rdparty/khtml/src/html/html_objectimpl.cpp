@@ -5,6 +5,7 @@
  *           (C) 1999 Antti Koivisto (koivisto@kde.org)
  *           (C) 2000 Stefan Schimanski (1Stein@gmx.de)
  *           (C) 2007, 2008 Maks Orlovich (maksim@kde.org)
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -110,7 +111,7 @@ void HTMLPartContainerElementImpl::setWidget(QWidget *widget)
 #ifdef QT_WIDGETS_LIB
         m_childWidget->hide();
 #else
-        m_childWidget->setProperty("visible", false);
+        m_childWidget->setVisible(false);
 #endif
     }
 
@@ -119,7 +120,7 @@ void HTMLPartContainerElementImpl::setWidget(QWidget *widget)
 #ifdef QT_WIDGETS_LIB
         oldWidget->hide();
 #else
-        oldWidget->setProperty("visible", false);
+        oldWidget->setVisible(false);
 #endif
         oldWidget->deleteLater();
     }

@@ -5,6 +5,7 @@
  *           (C) 1999 Antti Koivisto (koivisto@kde.org)
  *           (C) 2001 Dirk Mueller (mueller@kde.org)
  *           (C) 2004, 2005, 2006 Apple Computer, Inc.
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -1086,7 +1087,7 @@ bool HTMLGenericFormElementImpl::isFocusableImpl(FocusType ft) const
 #ifdef QT_WIDGETS_LIB
     return widget && widget->focusPolicy() >= Qt::TabFocus;
 #else
-    return widget && widget->property("activeFocusOnTab").toBool();
+    return widget && widget->activeFocusOnTab();
 #endif
 }
 
@@ -1143,7 +1144,7 @@ void HTMLGenericFormElementImpl::defaultEventHandler(EventImpl *evt)
 #ifdef QT_WIDGETS_LIB
                 static_cast<RenderWidget *>(renderer())->widget()->setFocus();    // ### mmh..
 #else
-                static_cast<RenderWidget *>(renderer())->widget()->setProperty("focus", true);    // ### mmh..
+                static_cast<RenderWidget *>(renderer())->widget()->setFocus(true);    // ### mmh..
 #endif
             }
         } else if (evt->id() == EventImpl::MOUSEUP_EVENT || evt->id() == EventImpl::KEYUP_EVENT) {

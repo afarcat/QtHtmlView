@@ -7,6 +7,7 @@
  *           (C) 2004-2008 Apple Computer, Inc.
  *           (C) 2006 Germain Garand <germain@ebooksfrance.org>
  *           (C) 2008-2009 Fredrik Höglund <fredrik@kde.org>
+ * Copyright (C) 2018 afarcat <kabak@sina.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
