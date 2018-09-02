@@ -348,6 +348,12 @@ public:
     virtual ~QHTMLPart();
 
 #ifndef QT_WIDGETS_LIB
+public slots:
+    QUrl url() const override;
+    bool urlIsValid(const QUrl &url);
+    QUrl urlFromUserInput(const QString &text);
+
+protected:
     void geometryChanged(const QRectF &newGeometry,
                          const QRectF &oldGeometry) override;
 #endif
@@ -1196,6 +1202,11 @@ Q_SIGNALS:
      * Emitted if the cursor is moved over an URL.
      */
     void onURL(const QString &url);
+
+    /**
+     * Emitted if the cursor is opened an URL.
+     */
+    void openUrlRequest(const QUrl &url);
 
     /**
      * Emitted when the user clicks the right mouse button on the document.

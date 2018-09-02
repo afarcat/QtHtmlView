@@ -122,7 +122,7 @@ public:
      *
      *  @return The current URL.
      */
-    QUrl url() const;
+    virtual QUrl url() const;
 
     /**
      * Called when closing the current url (e.g. document), for instance

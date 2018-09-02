@@ -112,6 +112,7 @@ public:
     {
         q     = part;
         m_extension  = nullptr;
+        m_statusBarExtension = nullptr;
         //AFA m_hostExtension = nullptr;
 #if ENABLE(KJS)
         m_scriptableExtension = nullptr;

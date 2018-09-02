@@ -10,6 +10,8 @@
 #include <qhtmlpart.h>
 #include <qhtmlview.h>
 
+QML_DECLARE_TYPE(KParts::BrowserExtension)
+
 class QtHtmlQmlPlugin : public QQmlExtensionPlugin
 {
     Q_OBJECT
@@ -34,6 +36,8 @@ void registerHtmlQmlTypes()
     // QtHtmlQml 1.0
     qmlRegisterType<QHTMLPart>(uri, 1, 0, "HTMLPart");
     qmlRegisterType<QHTMLView>(uri, 1, 0, "HTMLView");
+
+    qmlRegisterType<KParts::BrowserExtension>(uri, 1, 0, "BrowserExtension");
 }
 
 #include "htmlqml_plugin.moc"

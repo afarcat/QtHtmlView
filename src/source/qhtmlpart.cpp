@@ -213,13 +213,12 @@ public:
 
 #ifdef QT_WIDGETS_LIB
 QHTMLPart::QHTMLPart(QWidget *parentWidget, QObject *parent)
-    : KParts::ReadOnlyPart(parent)
+    : KParts::ReadOnlyPart(parent), d(nullptr)
 #else
 QHTMLPart::QHTMLPart(QWidget *parent)
-    : KParts::ReadOnlyPart(parent)
+    : KParts::ReadOnlyPart(parent), d(nullptr)
 #endif
 {
-    d = nullptr;
     QHTMLGlobal::registerPart(this);
     //AFA setComponentData(QHTMLGlobal::aboutData(), false);
 #ifdef QT_WIDGETS_LIB
@@ -231,9 +230,8 @@ QHTMLPart::QHTMLPart(QWidget *parent)
 
 #ifdef QT_WIDGETS_LIB
 QHTMLPart::QHTMLPart(KHTMLView *view, QObject *parent)
-    : KParts::ReadOnlyPart(parent)
+    : KParts::ReadOnlyPart(parent), d(nullptr)
 {
-    d = nullptr;
     QHTMLGlobal::registerPart(this);
     //AFA setComponentData(QHTMLGlobal::aboutData(), false);
     assert(view);
@@ -253,7 +251,6 @@ void QHTMLPart::init(QHTMLView *view)
     //}
 
     d = new QHTMLPartPrivate(this, parent());
-
     d->m_view = view;
 
     if (!parentPart()) {
@@ -656,6 +653,21 @@ QHTMLPart::~QHTMLPart()
 }
 
 #ifndef QT_WIDGETS_LIB
+QUrl KHTMLPart::url() const
+{
+    return KParts::ReadOnlyPart::url();
+}
+
+bool KHTMLPart::urlIsValid(const QUrl &url)
+{
+    return url.isValid();
+}
+
+QUrl KHTMLPart::urlFromUserInput(const QString &text)
+{
+    return QUrl::fromUserInput(text);
+}
+
 void KHTMLPart::geometryChanged(const QRectF &newGeometry, const QRectF &oldGeometry)
 {
     // fill parent
@@ -1177,7 +1189,7 @@ QString QHTMLPart::documentSource() const
 
 KParts::BrowserExtension *QHTMLPart::browserExtension() const
 {
-    return d->m_extension;
+    return d ? d->m_extension : nullptr;
 }
 
 //KParts::BrowserHostExtension *QHTMLPart::browserHostExtension() const
@@ -1195,6 +1207,10 @@ QHTMLView *QHTMLPart::view() const
 
 void KHTMLPart::setView(KHTMLView *view)
 {
+    if (d && d->m_view == view) {
+        return;
+    }
+
     assert(view && !d);
 
     init(view);
@@ -4168,10 +4184,11 @@ bool QHTMLPart::urlSelected(const QString &url, int button, int state, const QSt
     }
 #ifdef QT_WIDGETS_LIB
     view()->viewport()->unsetCursor();
+    emit d->m_extension->openUrlRequest(cURL, args, browserArgs);
 #else
     view()->unsetCursor();
+    emit openUrlRequest(cURL);
 #endif
-    emit d->m_extension->openUrlRequest(cURL, args, browserArgs);
 
     return true;
 }

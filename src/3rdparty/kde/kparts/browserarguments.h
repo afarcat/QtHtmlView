@@ -1,6 +1,7 @@
 /* This file is part of the KDE project
    Copyright (C) 1999 Simon Hausmann <hausmann@kde.org>
                       David Faure <faure@kde.org>
+   Copyright (C) 2018 afarcat <kabak@sina.com>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -23,13 +24,14 @@
 
 #include <kparts/kparts_export.h>
 
+#include <QObject>
 #include <QStringList>
 #include <QByteArray>
 
 namespace KParts
 {
 
-struct BrowserArgumentsPrivate;
+class BrowserArgumentsPrivate;
 
 /**
  * BrowserArguments is a set of web-browsing-specific arguments,
@@ -49,7 +51,9 @@ struct BrowserArgumentsPrivate;
 // KF6 TODO: move variables to private class and add accessors instead,
 //           for consistency
 // KF6 TODO: make class instead of struct
-struct KPARTS_EXPORT BrowserArguments {
+class KPARTS_EXPORT BrowserArguments
+{
+public:
     BrowserArguments();
     BrowserArguments(const BrowserArguments &args);
     BrowserArguments &operator=(const BrowserArguments &args);
@@ -165,5 +169,7 @@ private:
 };
 
 }
+
+Q_DECLARE_METATYPE(KParts::BrowserArguments)
 
 #endif

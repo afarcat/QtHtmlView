@@ -118,7 +118,9 @@ void HtmlBarWidget::slotNextUrl()
 void HtmlBarWidget::slotGotoUrl(int index)
 {
     QUrl url = QUrl::fromUserInput(ui->comboBox->itemText(index));
-    htmlWidget->openUrl(url);
+    if (url.isValid()) {
+        htmlWidget->openUrl(url);
+    }
 }
 
 void HtmlBarWidget::slotOpenUrl()

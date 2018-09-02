@@ -1,6 +1,6 @@
 # QtHtmlView - a fully functional HTHML viewer
 
-## Introduction
+## QtHtmlView
 
 QtHtmlView is based on KHTML, The aim is to provide a Qt component with fast rendering speed, low memory footprint and small file size to display HTML.
 
@@ -12,9 +12,13 @@ QtHtmlView is based on KHTML, The aim is to provide a Qt component with fast ren
 
 4. Considering the compatibility of source code, the minimum function file of KPARTS and KIO Library of KDE is used.
 
+## QtHtmlQml
+
+QtHtmlQml is the QML implementation of QtHtmlView and does not depend on QtWidgets. It needs at least QtQuick.Controls 2.2 version support.
+
 ## Contributing Code
 
-QtHtmlView is licensed same as KHTML. Please see the file COPYING for KHTML/KPARTS/KIO of licenses file.
+QtHtmlView is licensed same as KHTML. Please see the file COPYING for KHTML/KJS/KPARTS/KIO of licenses file.
 The QtHtmlView example is licensed under Apache v2.0.
 
 ## Checking out the source

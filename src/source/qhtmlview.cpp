@@ -617,6 +617,7 @@ QHTMLView::QHTMLView(QWidget *parent)
     setAcceptHoverEvents(true);
     setAcceptedMouseButtons(Qt::AllButtons);
     setFlag(ItemAcceptsInputMethod, true);
+    setFlag(ItemHasContents, true);
 #endif
 
     initWidget();
@@ -641,7 +642,22 @@ QHTMLView::~QHTMLView()
 #ifndef QT_WIDGETS_LIB
 void KHTMLView::ensureVisible(int x, int y, int xmargin, int ymargin)
 {
+    QQuickFlickable *flickable = this->flickable();
+    if (!flickable) {
+        return;
+    }
 
+    if ((x - xmargin) < flickable->contentX()) {
+        flickable->setContentX(qMax(0, x - xmargin));
+    } else if (x > (flickable->contentX() + d->viewport->width() - xmargin)) {
+        flickable->setContentX(qMin(x - d->viewport->width() + xmargin, flickable->contentWidth()));
+    }
+
+    if ((y - ymargin) < flickable->contentY()) {
+        flickable->setContentY(qMax(0, y - ymargin));
+    } else if (y > (flickable->contentY() + d->viewport->height() - ymargin)) {
+        flickable->setContentY(qMin(y - d->viewport->height() + ymargin, flickable->contentHeight()));
+    }
 }
 
 QWidget *KHTMLView::viewport() const
@@ -652,6 +668,12 @@ QWidget *KHTMLView::viewport() const
 void KHTMLView::setViewport(QWidget *viewport)
 {
     d->viewport = qobject_cast<QQuickScrollView *>(viewport);
+
+    QQuickFlickable *flickable = this->flickable();
+    if (flickable) {
+        connect(flickable, SIGNAL(contentXChanged()), this, SLOT(update()));
+        connect(flickable, SIGNAL(contentYChanged()), this, SLOT(update()));
+    }
 }
 
 QQuickFlickable *KHTMLView::flickable() const
@@ -919,13 +941,10 @@ void QHTMLView::setContentsPos(int x, int y)
                                     horizontalScrollBar()->maximum() - x : x);
     verticalScrollBar()->setValue(y);
 #else
-    QQuickScrollBar *hbar = horizontalScrollBar();
-    if (hbar) {
-        //contentsX = (QGuiApplication::isRightToLeft() ? hbar->size() - hbar->position() : hbar->position()) * d->viewport->contentWidth();
-    }
-    QQuickScrollBar *vbar = verticalScrollBar();
-    if (vbar) {
-        //contentsY = vbar->position() * d->viewport->contentHeight();
+    QQuickFlickable *flickable = this->flickable();
+    if (flickable) {
+        flickable->setContentX(x);
+        flickable->setContentY(y);
     }
 #endif
 }
@@ -939,13 +958,10 @@ void QHTMLView::scrollBy(int x, int y)
     horizontalScrollBar()->setValue(horizontalScrollBar()->value() + x);
     verticalScrollBar()->setValue(verticalScrollBar()->value() + y);
 #else
-    QQuickScrollBar *hbar = horizontalScrollBar();
-    if (hbar) {
-        //contentsX = (QGuiApplication::isRightToLeft() ? hbar->size() - hbar->position() : hbar->position()) * d->viewport->contentWidth();
-    }
-    QQuickScrollBar *vbar = verticalScrollBar();
-    if (vbar) {
-        //contentsY = vbar->position() * d->viewport->contentHeight();
+    QQuickFlickable *flickable = this->flickable();
+    if (flickable) {
+        flickable->setContentX(x);
+        flickable->setContentY(y);
     }
 #endif
 }
@@ -1178,13 +1194,12 @@ void KHTMLView::paint(QPainter *painter)
     QRect r = boundingRect().toRect();
     QPoint off(contentsX(), contentsY());
     r.translate(off);
+    setPosition(off); //keep sync with QQuickFlickable
 
     if (!r.isValid() || r.isEmpty()) {
         painter->fillRect(boundingRect(), Qt::lightGray);
         return;
     }
-
-    //painter->translate(-off);
 
     if (d->haveZoom()) {
         painter->scale(d->zoomLevel / 100., d->zoomLevel / 100.);
@@ -1195,7 +1210,6 @@ void KHTMLView::paint(QPainter *painter)
         r.setHeight(r.height() * 100 / d->zoomLevel);
         r.adjust(-1, -1, 1, 1);
     }
-    //painter->setClipRect(r);
 
     int ex = r.x();
     int ey = r.y();
@@ -1218,6 +1232,8 @@ void KHTMLView::paint(QPainter *painter)
         return;
     }
     d->painting = true;
+
+    painter->translate(-off);
 
     m_part->xmlDocImpl()->renderer()->layer()->paint(painter, r);
 
@@ -1573,6 +1589,10 @@ void QHTMLView::mousePressEvent(QMouseEvent *_mouse)
         QCoreApplication::sendEvent(m_part, &event);
         // we might be deleted after this
     }
+
+#ifndef QT_WIDGETS_LIB
+    //QScrollArea::mousePressEvent(_mouse);
+#endif
 }
 
 void QHTMLView::mouseDoubleClickEvent(QMouseEvent *_mouse)
@@ -1614,7 +1634,7 @@ void QHTMLView::mouseDoubleClickEvent(QMouseEvent *_mouse)
     QTimer::singleShot(QGuiApplication::styleHints()->mouseDoubleClickInterval(), this, SLOT(tripleClickTimeout()));
 
 #ifndef QT_WIDGETS_LIB
-    _mouse->setAccepted(true);
+    //QScrollArea::mouseDoubleClickEvent(_mouse);
 #endif
 }
 
@@ -1918,6 +1938,10 @@ void QHTMLView::mouseMoveEvent(QMouseEvent *_mouse)
         khtml::MouseMoveEvent event(_mouse, xm, ym, mev.url, mev.target, mev.innerNode);
         QCoreApplication::sendEvent(m_part, &event);
     }
+
+#ifndef QT_WIDGETS_LIB
+    //QScrollArea::mouseMoveEvent(_mouse);
+#endif
 }
 
 void QHTMLView::mouseReleaseEvent(QMouseEvent *_mouse)
@@ -1967,6 +1991,10 @@ void QHTMLView::mouseReleaseEvent(QMouseEvent *_mouse)
         khtml::MouseReleaseEvent event(_mouse, xm, ym, mev.url, mev.target, mev.innerNode);
         QCoreApplication::sendEvent(m_part, &event);
     }
+
+#ifndef QT_WIDGETS_LIB
+    //QScrollArea::mouseReleaseEvent(_mouse);
+#endif
 }
 
 // returns true if event should be swallowed
@@ -2095,12 +2123,17 @@ void QHTMLView::keyPressEvent(QKeyEvent *_ke)
     int offs = (viewport()->height() < 30) ? viewport()->height() : 30; // ### ??
 #else
     int offs = (height() < 30) ? height() : 30; // ### ??
+    QQuickFlickable *flickable = this->flickable();
 #endif
     if (_ke->modifiers() & Qt::ShiftModifier)
         switch (_ke->key()) {
         case Qt::Key_Space:
 #ifdef QT_WIDGETS_LIB
             verticalScrollBar()->setValue(verticalScrollBar()->value() - viewport()->height() + offs);
+#else
+            if (flickable) {
+                flickable->setContentY(flickable->contentY() - viewport()->height() + offs);
+            }
 #endif
             if (d->scrollSuspended) {
                 d->newScrollTimer(this, 0);
@@ -2134,6 +2167,10 @@ void QHTMLView::keyPressEvent(QKeyEvent *_ke)
             if (!d->scrollTimerId || d->scrollSuspended) {
 #ifdef QT_WIDGETS_LIB
                 verticalScrollBar()->setValue(verticalScrollBar()->value() + 10);
+#else
+                if (flickable) {
+                    flickable->setContentY(flickable->contentY() + 10);
+                }
 #endif
             }
             if (d->scrollTimerId) {
@@ -2146,6 +2183,10 @@ void QHTMLView::keyPressEvent(QKeyEvent *_ke)
             d->shouldSmoothScroll = true;
 #ifdef QT_WIDGETS_LIB
             verticalScrollBar()->setValue(verticalScrollBar()->value() + viewport()->height() - offs);
+#else
+            if (flickable) {
+                flickable->setContentY(flickable->contentY() + viewport()->height() - offs);
+            }
 #endif
             if (d->scrollSuspended) {
                 d->newScrollTimer(this, 0);
@@ -2157,6 +2198,10 @@ void QHTMLView::keyPressEvent(QKeyEvent *_ke)
             if (!d->scrollTimerId || d->scrollSuspended) {
 #ifdef QT_WIDGETS_LIB
                 verticalScrollBar()->setValue(verticalScrollBar()->value() - 10);
+#else
+                if (flickable) {
+                    flickable->setContentY(flickable->contentY() - 10);
+                }
 #endif
             }
             if (d->scrollTimerId) {
@@ -2168,6 +2213,10 @@ void QHTMLView::keyPressEvent(QKeyEvent *_ke)
             d->shouldSmoothScroll = true;
 #ifdef QT_WIDGETS_LIB
             verticalScrollBar()->setValue(verticalScrollBar()->value() - viewport()->height() + offs);
+#else
+            if (flickable) {
+                flickable->setContentY(flickable->contentY() - viewport()->height() + offs);
+            }
 #endif
             if (d->scrollSuspended) {
                 d->newScrollTimer(this, 0);
@@ -2178,6 +2227,10 @@ void QHTMLView::keyPressEvent(QKeyEvent *_ke)
             if (!d->scrollTimerId || d->scrollSuspended) {
 #ifdef QT_WIDGETS_LIB
                 horizontalScrollBar()->setValue(horizontalScrollBar()->value() + 10);
+#else
+                if (flickable) {
+                    flickable->setContentX(flickable->contentX() + 10);
+                }
 #endif
             }
             if (d->scrollTimerId) {
@@ -2190,6 +2243,10 @@ void QHTMLView::keyPressEvent(QKeyEvent *_ke)
             if (!d->scrollTimerId || d->scrollSuspended) {
 #ifdef QT_WIDGETS_LIB
                 horizontalScrollBar()->setValue(horizontalScrollBar()->value() - 10);
+#else
+                if (flickable) {
+                    flickable->setContentX(flickable->contentX() - 10);
+                }
 #endif
             }
             if (d->scrollTimerId) {
@@ -2211,6 +2268,11 @@ void QHTMLView::keyPressEvent(QKeyEvent *_ke)
 #ifdef QT_WIDGETS_LIB
             verticalScrollBar()->setValue(0);
             horizontalScrollBar()->setValue(0);
+#else
+            if (flickable) {
+                flickable->setContentX(0);
+                flickable->setContentY(0);
+            }
 #endif
             if (d->scrollSuspended) {
                 d->newScrollTimer(this, 0);
@@ -2219,6 +2281,10 @@ void QHTMLView::keyPressEvent(QKeyEvent *_ke)
         case Qt::Key_End:
 #ifdef QT_WIDGETS_LIB
             verticalScrollBar()->setValue(contentsHeight() - visibleHeight());
+#else
+            if (flickable) {
+                flickable->setContentY(contentsHeight() - visibleHeight());
+            }
 #endif
             if (d->scrollSuspended) {
                 d->newScrollTimer(this, 0);
@@ -2708,8 +2774,6 @@ bool QHTMLView::widgetEvent(QEvent *e)
         if (static_cast<QMoveEvent *>(e)->pos() != QPoint(0, 0)) {
 #ifdef QT_WIDGETS_LIB
             widget()->move(0, 0);
-#else
-            setPosition(QPoint(0, 0));
 #endif
             updateScrollBars();
             return true;
@@ -2807,6 +2871,12 @@ bool QHTMLView::scrollTo(const QRect &bounds)
 #ifdef QT_WIDGETS_LIB
     horizontalScrollBar()->setValue(horizontalScrollBar()->value() + scrollX);
     verticalScrollBar()->setValue(verticalScrollBar()->value() + scrollY);
+#else
+    QQuickFlickable *flickable = this->flickable();
+    if (flickable) {
+        flickable->setContentX(flickable->contentX() + scrollX);
+        flickable->setContentY(flickable->contentY() + scrollY);
+    }
 #endif
     d->scrollingSelf = false;
 
@@ -4299,9 +4369,6 @@ void QHTMLView::wheelEvent(QWheelEvent *e)
             }
 #endif
         }
-#ifndef QT_WIDGETS_LIB
-        update();
-#endif
         QScrollArea::wheelEvent(e);
     }
 
@@ -4457,11 +4524,6 @@ void QHTMLView::scrollContentsBy(int dx, int dy)
         off = viewport()->mapTo(this, off);
     }
 #else
-    if (position() != QPoint(0, 0)) {
-        // qCDebug(KHTML_LOG) << "Static widget wasn't positioned at (0,0). This should NOT happen. Please report this event to developers.";
-        setPosition(QPoint(0, 0));
-    }
-
     QWidget *w = this;
     QPoint off;
     if (m_kwp->isRedirected()) {
@@ -4969,7 +5031,11 @@ void QHTMLView::slotMouseScrollTimer()
     horizontalScrollBar()->setValue(horizontalScrollBar()->value() + d->m_mouseScroll_byX);
     verticalScrollBar()->setValue(verticalScrollBar()->value() + d->m_mouseScroll_byY);
 #else
-
+    QQuickFlickable *flickable = this->flickable();
+    if (flickable) {
+        flickable->setContentX(flickable->contentX() +  + d->m_mouseScroll_byX);
+        flickable->setContentY(flickable->contentY() +  + d->m_mouseScroll_byY);
+    }
 #endif
 }
 

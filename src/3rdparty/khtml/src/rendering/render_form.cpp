@@ -603,7 +603,7 @@ RenderRadioButton::RenderRadioButton(HTMLInputElementImpl *element)
     // prevent firing toggled() signals on initialization
     b->setChecked(element->checked());
 
-    connect(b, SIGNAL(toggled(bool)), this, SLOT(slotToggled(bool)));
+    //AFA connect(b, SIGNAL(toggled(bool)), this, SLOT(slotToggled(bool)));
 #endif
     m_ignoreToggled = false;
 }

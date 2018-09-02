@@ -12,35 +12,70 @@ import QtHtmlQml 1.0
 Page {
     id: page
 
+    property bool canAddPrev: true;
+    property bool comboBoxBlockSignals: false;
+    property var comboBoxUrls: ["http://www.qtcn.org/bbs/i.php", "http://blog.qt.io/"];
+    property var prevUrls: [];
+    property var nextUrls: [];
+
     header: ToolBar {
         RowLayout {
             anchors.fill: parent
             ToolButton {
+                id: toolButtonPrev
                 icon.source: "qrc:/resources/images/goleft-128.png"
                 icon.width: 24
                 icon.height: 24
+                enabled: false
+                onClicked: slotPrevUrl()
             }
             ToolButton {
+                id: toolButtonNext
                 icon.source: "qrc:/resources/images/goright-128.png"
                 icon.width: 24
                 icon.height: 24
+                enabled: false
+                onClicked: slotNextUrl()
             }
             ComboBox {
+                id: comboBox
                 Layout.fillWidth: true
                 editable: true
-                model: ["http://www.qtcn.org/bbs/i.php", "http://blog.qt.io/"]
+                model: comboBoxUrls
+                onCurrentIndexChanged: slotGotoUrl(comboBox.currentIndex)
+                onAccepted: {
+                    var url = htmlPart.urlFromUserInput(editText);
+                    if (htmlPart.urlIsValid(url)) {
+                        var item = url.toString();
+
+                        comboBoxBlockSignals = true;
+
+                        var index = comboBoxFind(item);
+                        if (index !== -1) {
+                            comboBoxUrls.splice(index, 1);
+                        }
+
+                        comboBoxUrls.unshift(item);
+
+                        comboBox.model = comboBoxUrls;
+                        comboBox.currentIndex = 0;
+
+                        comboBoxBlockSignals = false;
+
+                        slotGotoUrl(comboBox.currentIndex);
+                    }
+                }
             }
             ToolButton {
                 icon.source: "qrc:/resources/images/open-128.png"
                 icon.width: 24
                 icon.height: 24
-                onClicked: {
-                    fds.open()
-                }
+                onClicked: slotOpenUrl()
             }
         }
     }
 
+    //AFA: QtHtmlQml basic struct
     HTMLPart {
         id: htmlPart
         anchors.fill: parent
@@ -58,6 +93,20 @@ Page {
             }
         }
     }
+
+    //AFA: this not work
+    //Connections {
+    //    target: {
+    //        htmlPart.view = htmlView;
+    //        return htmlPart.browserExtension();
+    //    }
+
+    //    onOpenUrlRequest: {
+    //        htmlPart.setArguments(arguments);
+    //        htmlPart.browserExtension().setBrowserArguments(browserArguments);
+    //        htmlPart.openUrl(url);
+    //    }
+    //}
 
     Connections {
         target: htmlPart
@@ -86,8 +135,12 @@ Page {
             }
         }
 
+        onOpenUrlRequest: {
+            htmlPart.openUrl(url);
+        }
+
         onUrlChanged: {
-            console.log(url, prevUrl);
+            slotUrlChanged(url, prevUrl);
         }
     }
 
@@ -104,7 +157,108 @@ Page {
         selectMultiple: false
         nameFilters: ["*.htm *.html"]
         onAccepted: {
-            htmlPart.openUrl(fds.fileUrl);
+            if (htmlPart.urlIsValid(fds.fileUrl)) {
+                htmlPart.openUrl(fds.fileUrl);
+            }
         }
-   }
+    }
+
+    //function do something
+    function updateButton()
+    {
+        toolButtonPrev.enabled = (prevUrls.length > 0);
+        toolButtonNext.enabled = (nextUrls.length > 0);
+    }
+
+    function comboBoxFind(item)
+    {
+        for (var index = 0; index < comboBoxUrls.length; index++) {
+            if (comboBoxUrls[index] === item) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    function slotUrlChanged(url, prevUrl)
+    {
+        var item = url.toString();
+
+        comboBoxBlockSignals = true;
+
+        var index = comboBoxFind(item);
+        if (index !== -1) {
+            comboBoxUrls.splice(index, 1);
+        }
+
+        comboBoxUrls.unshift(item);
+
+        comboBox.model = comboBoxUrls;
+        comboBox.currentIndex = 0;
+
+        comboBoxBlockSignals = false;
+
+        //
+        if (canAddPrev && htmlPart.urlIsValid(prevUrl)) {
+            console.log("prevUrls enqueue url=", prevUrl);
+
+            prevUrls.push(prevUrl);
+
+            updateButton();
+        }
+
+        canAddPrev = true;
+    }
+
+    function slotPrevUrl()
+    {
+        if (prevUrls.length > 0) {
+            var url1 = prevUrls.shift();
+
+            var url2 = htmlPart.url();
+            if (htmlPart.urlIsValid(url2)) {
+               console.log("nextUrls enqueue url=", url2);
+
+                nextUrls.push(url2);
+            }
+
+            canAddPrev = false;
+
+            htmlPart.openUrl(url1);
+
+            updateButton();
+        }
+    }
+
+    function slotNextUrl()
+    {
+        if (nextUrls.length > 0) {
+            var url = nextUrls.shift();
+
+            htmlPart.openUrl(url);
+
+            updateButton();
+        }
+    }
+
+    function slotGotoUrl(index)
+    {
+        if (comboBoxBlockSignals) {
+            return;
+        }
+
+        if (index > comboBoxUrls.length) {
+            return;
+        }
+
+        var url = htmlPart.urlFromUserInput(comboBoxUrls[index]);
+        if (htmlPart.urlIsValid(url)) {
+            htmlPart.openUrl(url);
+        }
+    }
+
+    function slotOpenUrl()
+    {
+        fds.open();
+    }
 }

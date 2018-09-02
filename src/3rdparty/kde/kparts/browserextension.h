@@ -106,7 +106,7 @@ public:
      *
      * @param parent The KParts::ReadOnlyPart that this extension ... "extends" :)
      */
-    explicit BrowserExtension(KParts::ReadOnlyPart *parent);
+    explicit BrowserExtension(KParts::ReadOnlyPart *parent = nullptr);
 
     virtual ~BrowserExtension();
 
@@ -131,6 +131,8 @@ public:
 
     Q_DECLARE_FLAGS(PopupFlags, PopupFlag)
 
+    //AFA: use for qml
+public slots:
     /**
      * Set the parameters to use for opening the next URL.
      * This is called by the "hosting" application, to pass parameters to the part.
@@ -176,6 +178,7 @@ public:
      */
     virtual void restoreState(QDataStream &stream);
 
+public:
     /**
      * Returns whether url drop handling is enabled.
      * See setURLDropHandlingEnabled for more information about this
