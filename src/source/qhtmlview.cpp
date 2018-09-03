@@ -3586,7 +3586,14 @@ bool QHTMLView::pagedMode() const
 void QHTMLView::setWidgetVisible(RenderWidget *w, bool vis)
 {
     if (vis) {
+#ifdef QT_WIDGETS_LIB
         d->visibleWidgets.insert(w, w->widget());
+#else
+        QWidget *qmlWidget = w->qmlWidget();
+        if (qmlWidget) {
+            d->visibleWidgets.insert(w, qmlWidget);
+        }
+#endif
     } else {
         d->visibleWidgets.remove(w);
     }
@@ -4720,8 +4727,6 @@ void QHTMLView::addChild(QWidget *child, int x, int y)
     if (child->parentItem() != this) {
         child->setParentItem(this);
     }
-
-    // ### handle pseudo-zooming of non-redirected widgets (e.g. just resize'em)
 
     child->setPosition(QPoint(x - contentsX(), y - contentsY()));
 #endif

@@ -45,23 +45,7 @@ class QWidget;
 #include <QProxyStyle>
 #include <qcombobox.h>
 #else
-#include <QtQuickTemplates2/private/qquickcombobox_p.h>
-#include <QtQuickTemplates2/private/qquickcheckbox_p.h>
-#include <QtQuickTemplates2/private/qquickradiobutton_p.h>
-#include <QtQuickTemplates2/private/qquickbutton_p.h>
-#include <QtQuickTemplates2/private/qquicktextfield_p.h>
-#include <QtQuickTemplates2/private/qquicktextarea_p.h>
-#include <QtQuickTemplates2/private/qquickscrollbar_p.h>
-#include <QtQuick/private/qquicklistview_p.h>
-
-#define QCheckBox QQuickCheckBox
-#define QComboBox QQuickComboBox
-#define QRadioButton QQuickRadioButton
-#define QPushButton QQuickButton
-#define QLineEdit QQuickTextField
-#define QTextEdit QQuickTextArea
-#define QListWidget QQuickListView
-#define QScrollBar QQuickScrollBar
+#include "htmlqml_ui.h"
 #endif
 #include "dom/dom_misc.h"
 

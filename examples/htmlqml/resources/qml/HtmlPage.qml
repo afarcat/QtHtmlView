@@ -9,6 +9,9 @@ import QtQuick.Layouts 1.0
 import QtQuick.Dialogs 1.0
 import QtHtmlQml 1.0
 
+//AFA: this file in QtHtmlQml
+import "qrc:/resources/qml/QWidgetLogic.js" as QWidgetLogic
+
 Page {
     id: page
 
@@ -81,7 +84,7 @@ Page {
         anchors.fill: parent
         view: htmlView
 
-        //AFA: at least use QtQuick.Controls 2.2, Since: Qt 5.9
+        //AFA: at least use QtQuick.Controls 2.0, Since: Qt 5.7
         ScrollView {
             id: scrollView
             clip: true
@@ -90,6 +93,18 @@ Page {
                 id: htmlView
                 part: htmlPart
                 viewport: scrollView
+            }
+        }
+
+        function createQmlWidget(parent, className)
+        {
+            return QWidgetLogic.createQmlWidget(parent, className);
+        }
+
+        function destroyQmlWidget(qmlWidget)
+        {
+            if (qmlWidget !== null) {
+                qmlWidget.destroy();
             }
         }
     }

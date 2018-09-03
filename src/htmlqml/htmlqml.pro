@@ -13,5 +13,14 @@ DESTDIR = ../../bin
 
 include (../src.pri)
 
+INCLUDEPATH += $$PWD
+
+HEADERS += \
+    $$PWD/htmlqml_plugin.h \
+    $$PWD/htmlqml_ui.h
+
 SOURCES += \
-    $$PWD/htmlqml_plugin.cpp
+    $$PWD/htmlqml_plugin.cpp \
+    $$PWD/htmlqml_ui.cpp
+
+RESOURCES += htmlqml.qrc

@@ -14,7 +14,7 @@ QtHtmlView is based on KHTML, The aim is to provide a Qt component with fast ren
 
 ## QtHtmlQml
 
-QtHtmlQml is the QML implementation of QtHtmlView and does not depend on QtWidgets. It needs at least QtQuick.Controls 2.2 version support.
+QtHtmlQml is the QML implementation of QtHtmlView and does not depend on QtWidgets. It needs at least QtQuick.Controls 2.0 version support.
 
 ## Contributing Code
 

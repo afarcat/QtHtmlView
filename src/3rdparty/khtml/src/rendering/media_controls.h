@@ -34,9 +34,7 @@
 #include <QPushButton>
 #include <QToolButton>
 #else
-#include <QQuickItem>
-#define QWidget QQuickItem
-#define QPushButton QQuickItem
+#include "htmlqml_ui.h"
 #define QToolButton QQuickItem
 #endif
 

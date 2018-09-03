@@ -1,0 +1,13 @@
+<RCC>
+    <qresource prefix="/">
+        <file>resources/qml/QCheckBox.qml</file>
+        <file>resources/qml/QComboBox.qml</file>
+        <file>resources/qml/QRadioButton.qml</file>
+        <file>resources/qml/QPushButton.qml</file>
+        <file>resources/qml/QLineEdit.qml</file>
+        <file>resources/qml/QTextEdit.qml</file>
+        <file>resources/qml/QListWidget.qml</file>
+        <file>resources/qml/QScrollBar.qml</file>
+        <file>resources/qml/QWidgetLogic.js</file>
+    </qresource>
+</RCC>

@@ -254,10 +254,10 @@ RenderWidget::~RenderWidget()
         }
         m_widget->hide();
 #else
-        if (m_widget->hasFocus()) {
+        if (m_qmlWidget) {
             m_widget->setFocus(false);
+            m_qmlWidget->setVisible(false);
         }
-        m_widget->setVisible(false);
 #endif
         if (m_ownsWidget) {
             m_widget->deleteLater();
@@ -289,6 +289,9 @@ void  RenderWidget::resizeWidget(int w, int h)
         m_widget->resize(w, h);
 #else
         m_widget->setSize(QSize(w, h));
+        //AFA: make same as m_widget
+        if (m_qmlWidget)
+            m_qmlWidget->setSize(QSize(w, h));
 #endif
         if (isRedirectedWidget() && qobject_cast<KHTMLView *>(m_widget) && !m_widget->isVisible()) {
             // Emission of Resize event is delayed.
@@ -328,7 +331,8 @@ void RenderWidget::setQWidget(QWidget *widget)
 #ifdef QT_WIDGETS_LIB
             m_widget->hide();
 #else
-            m_widget->setVisible(false);
+            if (m_qmlWidget)
+                m_qmlWidget->setVisible(false);
 #endif
             if (m_ownsWidget) {
                 m_widget->deleteLater();    //Might happen due to event on the widget, so be careful
@@ -336,6 +340,10 @@ void RenderWidget::setQWidget(QWidget *widget)
             m_widget = nullptr;
         }
         m_widget = widget;
+#ifndef QT_WIDGETS_LIB
+        //AFA: save qml widget
+        m_qmlWidget = (qobject_cast<QQmlWidget *>(m_widget))->qmlWidget();
+#endif
         if (m_widget) {
             KHTMLWidget *k = dynamic_cast<KHTMLWidget *>(m_widget);
             bool isRedirectedSubFrame = false;
@@ -350,7 +358,8 @@ void RenderWidget::setQWidget(QWidget *widget)
 #ifdef QT_WIDGETS_LIB
             m_widget->setParent(m_view->widget());
 #else
-            m_widget->setParentItem(m_view);
+            if (m_qmlWidget)
+                m_qmlWidget->setParentItem(m_view);
 #endif
             if (isRedirectedSubFrame) {
                 static_cast<KHTMLView *>(m_widget)->setHasStaticBackground();
@@ -385,8 +394,10 @@ void RenderWidget::setQWidget(QWidget *widget)
             m_widget->move(0, -500000);
             m_widget->hide();
 #else
-            m_widget->setPosition(QPoint(0, -500000));
-            m_widget->setVisible(false);
+            if (m_qmlWidget) {
+                m_qmlWidget->setPosition(QPoint(0, -500000));
+                m_qmlWidget->setVisible(false);
+            }
 #endif
         }
     }
@@ -617,7 +628,8 @@ void RenderWidget::setStyle(RenderStyle *_style)
 #ifdef QT_WIDGETS_LIB
             m_widget->hide();
 #else
-            m_widget->setVisible(false);
+            if (m_qmlWidget)
+                m_qmlWidget->setVisible(false);
 #endif
         }
     }
@@ -657,8 +669,17 @@ void RenderWidget::paint(PaintInfo &paintInfo, int _tx, int _ty)
     int yPos = _ty + borderTop() + paddingTop();
 
     bool khtmlw = isRedirectedWidget();
+#ifdef QT_WIDGETS_LIB
     int childw = m_widget->width();
     int childh = m_widget->height();
+#else
+    int childw = m_widget->width();
+    int childh = m_widget->height();
+    if (m_qmlWidget) {
+        childw = m_qmlWidget->width();
+        childh = m_qmlWidget->height();
+    }
+#endif
     if ((childw == 2000 || childh == 3072) && m_widget->inherits("KHTMLView")) {
         KHTMLView *vw = static_cast<KHTMLView *>(m_widget);
         int cy = m_view->contentsY();
@@ -670,6 +691,10 @@ void RenderWidget::paint(PaintInfo &paintInfo, int _tx, int _ty)
 #else
         int childx = m_widget->x();
         int childy = m_widget->y();
+        if (m_qmlWidget) {
+            childx = m_qmlWidget->x();
+            childy = m_qmlWidget->y();
+        }
 #endif
 
         int xNew = xPos;
@@ -696,15 +721,21 @@ void RenderWidget::paint(PaintInfo &paintInfo, int _tx, int _ty)
         yPos = yNew;
     }
     m_view->setWidgetVisible(this, true);
+#ifdef QT_WIDGETS_LIB
     if (!khtmlw) {
         m_view->addChild(m_widget, xPos, yPos);
     } else {
         m_view->addChild(m_widget, xPos, -500000 + yPos);
     }
-#ifdef QT_WIDGETS_LIB
     m_widget->show();
 #else
-    m_widget->setVisible(true);
+    if (khtmlw) {   //AFA: qml always show
+        m_view->addChild(m_qmlWidget, xPos, yPos);
+    } else {
+        m_view->addChild(m_qmlWidget, xPos, -500000 + yPos);
+    }
+    if (m_qmlWidget)
+        m_qmlWidget->setVisible(true);
 #endif
     if (khtmlw) {
 #ifdef QT_WIDGETS_LIB

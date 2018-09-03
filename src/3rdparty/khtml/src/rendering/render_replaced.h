@@ -29,6 +29,8 @@
 #ifdef QT_WIDGETS_LIB
 #include <QAbstractScrollArea>
 #include <QScrollBar>
+#else
+#include "htmlqml_ui.h"
 #endif
 #include <QPointer>
 
@@ -126,6 +128,12 @@ public:
     {
         return m_widget;
     }
+#ifndef QT_WIDGETS_LIB
+    QWidget *qmlWidget() const
+    {
+        return m_qmlWidget;
+    }
+#endif
     KHTMLView *view() const
     {
         return m_view;
@@ -199,6 +207,9 @@ protected:
     void resizeWidget(int w, int h);
 
     QWidget *m_widget;
+#ifndef QT_WIDGETS_LIB
+    QPointer<QWidget> m_qmlWidget;
+#endif
     KHTMLView *m_view;
     QPointer<QWidget> m_underMouse;
     QPixmap *m_buffer[2];
